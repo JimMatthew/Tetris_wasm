@@ -1,0 +1,35 @@
+/* tslint:disable */
+/* eslint-disable */
+export const memory: WebAssembly.Memory;
+export const __wbg_game_free: (a: number, b: number) => void;
+export const game_new: () => number;
+export const game_tick: (a: number) => void;
+export const game_is_game_over: (a: number) => number;
+export const game_get_board: (a: number) => [number, number];
+export const game_is_hold_used: (a: number) => number;
+export const game_get_next_pieces: (a: number, b: number) => [number, number];
+export const game_key_down: (a: number, b: number) => void;
+export const game_key_up: (a: number, b: number) => void;
+export const game_get_hold_piece: (a: number) => number;
+export const game_get_lines_cleared: (a: number) => number;
+export const game_get_score: (a: number) => number;
+export const game_get_level: (a: number) => number;
+export const game_set_arr: (a: number, b: number) => void;
+export const game_set_lock_delay: (a: number, b: number) => void;
+export const game_set_ghost: (a: number, b: number) => void;
+export const game_set_das: (a: number, b: number) => void;
+export const game_get_arr: (a: number) => number;
+export const game_get_das: (a: number) => number;
+export const game_get_lock_delay: (a: number) => number;
+export const game_can_hold: (a: number) => number;
+export const game_reset: (a: number) => void;
+export const game_restart: (a: number) => void;
+export const game_use_nes_ruleset: (a: number, b: number) => void;
+export const game_use_guideline_ruleset: (a: number, b: number) => void;
+export const game_set_generator: (a: number, b: number) => void;
+export const game_drain_events: (a: number) => [number, number];
+export const __wbindgen_exn_store: (a: number) => void;
+export const __externref_table_alloc: () => number;
+export const __wbindgen_externrefs: WebAssembly.Table;
+export const __wbindgen_free: (a: number, b: number, c: number) => void;
+export const __wbindgen_start: () => void;
