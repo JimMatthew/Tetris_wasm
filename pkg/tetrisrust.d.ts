@@ -21,12 +21,13 @@ export class Game {
     key_up(key: number): void;
     constructor();
     reset(): void;
-    restart(): void;
+    restart(start_level: number): void;
     set_arr(arr: number): void;
     set_das(das: number): void;
     set_generator(kind: GeneratorKind): void;
     set_ghost(ghost: boolean): void;
     set_lock_delay(lock_delay: number): void;
+    start(): void;
     tick(): void;
     use_guideline_ruleset(start_level: number): void;
     use_nes_ruleset(start_level: number): void;
@@ -63,7 +64,8 @@ export interface InitOutput {
     readonly game_get_lock_delay: (a: number) => number;
     readonly game_can_hold: (a: number) => number;
     readonly game_reset: (a: number) => void;
-    readonly game_restart: (a: number) => void;
+    readonly game_restart: (a: number, b: number) => void;
+    readonly game_start: (a: number) => void;
     readonly game_use_nes_ruleset: (a: number, b: number) => void;
     readonly game_use_guideline_ruleset: (a: number, b: number) => void;
     readonly game_set_generator: (a: number, b: number) => void;

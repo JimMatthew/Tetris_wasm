@@ -130,8 +130,11 @@ export class Game {
     reset() {
         wasm.game_reset(this.__wbg_ptr);
     }
-    restart() {
-        wasm.game_restart(this.__wbg_ptr);
+    /**
+     * @param {number} start_level
+     */
+    restart(start_level) {
+        wasm.game_restart(this.__wbg_ptr, start_level);
     }
     /**
      * @param {number} arr
@@ -162,6 +165,9 @@ export class Game {
      */
     set_lock_delay(lock_delay) {
         wasm.game_set_lock_delay(this.__wbg_ptr, lock_delay);
+    }
+    start() {
+        wasm.game_start(this.__wbg_ptr);
     }
     tick() {
         wasm.game_tick(this.__wbg_ptr);
