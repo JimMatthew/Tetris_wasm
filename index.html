@@ -2,49 +2,61 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>TETRIS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <title>TETRIS ZERO</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Unbounded:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #0a0a0f;
-            --surface: #111118;
-            --surface-2: #0d0d14;
-            --border: #1e1e2e;
-            --border-hi: #2e2e4e;
-            --text: #c8c8d8;
-            --text-dim: #66667a;
-            --accent: #7c6dfa;
-            --accent2: #fa6d8a;
-            --safe-bottom: env(safe-area-inset-bottom, 0px);
-            --panel-radius: 10px;
-            --panel-pad: 8px 10px;
-            --shadow-soft: 0 0 40px rgba(124,109,250,0.08);
-        }
-
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --void: #050508;
+            --deep: #0a0a12;
+            --surface: #12121c;
+            --surface-hi: #1a1a28;
+            --border: #252535;
+            --border-glow: #35355a;
+
+            --text-primary: #e8e8f0;
+            --text-secondary: #8888a8;
+            --text-dim: #55557a;
+
+            --neon-cyan: #00f0ff;
+            --neon-magenta: #ff00aa;
+            --neon-yellow: #ffee00;
+            --neon-green: #00ff88;
+
+            --accent: var(--neon-cyan);
+            --accent-alt: var(--neon-magenta);
+
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-left: env(safe-area-inset-left, 0px);
+            --safe-right: env(safe-area-inset-right, 0px);
         }
 
         html, body {
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            position: fixed;
+            touch-action: none;
             overscroll-behavior: none;
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--void);
+            color: var(--text-primary);
         }
 
         body {
-            min-height: 100svh;
-            background: var(--bg);
-            color: var(--text);
-            font-family: 'Share Tech Mono', monospace;
-            display: flex;
-            justify-content: flex-start;
-            align-items: center;
-            padding: 8px 8px calc(8px + var(--safe-bottom));
-            overflow-x: hidden;
+            background:
+                    radial-gradient(circle at 20% 80%, rgba(0, 240, 255, 0.08) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 20%, rgba(255, 0, 170, 0.06) 0%, transparent 50%),
+                    var(--void);
         }
 
         body::before {
@@ -55,974 +67,754 @@
                     0deg,
                     transparent,
                     transparent 2px,
-                    rgba(0,0,0,0.07) 2px,
-                    rgba(0,0,0,0.07) 4px
+                    rgba(0, 0, 0, 0.15) 2px,
+                    rgba(0, 0, 0, 0.15) 4px
             );
             pointer-events: none;
-            z-index: 100;
-        }
-
-        button,
-        select,
-        input {
-            font: inherit;
-        }
-
-        button:focus-visible,
-        select:focus-visible,
-        input:focus-visible {
-            outline: 2px solid var(--accent);
-            outline-offset: 2px;
+            z-index: 999;
+            opacity: 0.4;
         }
 
         #app {
             width: 100%;
-            max-width: 1000px;
-            margin: 0 auto;
+            height: 100%;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            padding: calc(8px + var(--safe-top)) calc(8px + var(--safe-left))
+            calc(8px + var(--safe-bottom)) calc(8px + var(--safe-right));
         }
 
-        h1 {
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 900;
-            font-size: clamp(14px, 3.2vw, 24px);
-            letter-spacing: clamp(3px, 1vw, 10px);
-            color: var(--accent);
-            text-shadow: 0 0 30px var(--accent), 0 0 60px rgba(124,109,250,0.25);
-            text-align: center;
-            margin-bottom: 6px;
-            user-select: none;
-        }
-
-        #mode-bar {
-            width: 100%;
+        header {
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            gap: 6px;
-            margin-bottom: 8px;
-            padding: 6px;
-            background: var(--surface);
-            border: 1px solid var(--border-hi);
-            border-radius: 10px;
-        }
-
-        #mode-bar .mode-label {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 8px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            color: var(--text-dim);
-            user-select: none;
-        }
-
-        .mode-btn {
-            min-height: 34px;
-            padding: 6px 10px;
-            border: 1px solid var(--border-hi);
-            border-radius: 7px;
-            background: transparent;
-            color: var(--text-dim);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            cursor: pointer;
-            transition: border-color 0.15s, color 0.15s, background 0.15s, box-shadow 0.15s, transform 0.08s;
-        }
-
-        .mode-btn:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        .mode-btn:active {
-            transform: translateY(1px);
-        }
-
-        .mode-btn.active {
-            background: var(--accent);
-            border-color: var(--accent);
-            color: #fff;
-            box-shadow: 0 0 14px rgba(124,109,250,0.4);
-        }
-
-        .mode-sep {
-            width: 1px;
-            height: 18px;
-            background: var(--border-hi);
-            margin: 0 4px;
-        }
-
-        #level-select-wrap {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-left: 2px;
-        }
-
-        #level-select-wrap .mode-label {
-            white-space: nowrap;
-        }
-
-        #start-level,
-        select {
-            min-height: 34px;
-            padding: 6px 8px;
-            border: 1px solid var(--border-hi);
-            border-radius: 7px;
-            background: var(--bg);
-            color: var(--text);
-            font-size: 11px;
-            outline: none;
-            cursor: pointer;
-        }
-
-        #start-level {
-            width: 68px;
-        }
-
-        #wrapper {
-            width: 100%;
-            display: grid;
-            grid-template-columns: 140px minmax(0, auto) 140px;
-            gap: 12px;
-            align-items: start;
-            justify-content: center;
-        }
-
-        .col {
-            width: 140px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .panel {
-            min-width: 0;
-            background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.06)), var(--surface);
+            padding: 12px 16px;
+            background: rgba(18, 18, 28, 0.6);
+            backdrop-filter: blur(12px);
             border: 1px solid var(--border);
-            border-radius: var(--panel-radius);
-            padding: var(--panel-pad);
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+            border-radius: 12px;
+            margin-bottom: 8px;
         }
 
-        .label {
-            margin-bottom: 5px;
-            color: var(--text-dim);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 7px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            user-select: none;
-        }
-
-        .stat-value,
-        #hi-score-val {
-            color: #fff;
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 700;
-            line-height: 1.1;
-            word-break: break-word;
-        }
-
-        .stat-value {
-            font-size: 16px;
-        }
-
-        #hi-score-val {
-            font-size: 12px;
-            color: var(--accent);
-        }
-
-        #combo-panel {
-            min-height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
-
-        #combo-text {
-            opacity: 0;
-            color: var(--accent2);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 9px;
-            font-weight: 700;
-            text-shadow: 0 0 10px var(--accent2);
-            transition: opacity 0.15s;
-        }
-
-        #combo-text.show {
-            opacity: 1;
-        }
-
-        #config-panel {
-            display: none;
-        }
-
-        .config-row {
-            margin-bottom: 10px;
-        }
-
-        .config-row:last-child {
-            margin-bottom: 0;
-        }
-
-        .config-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 4px;
-            color: var(--text-dim);
-            font-size: 9px;
-        }
-
-        .config-label span {
-            color: var(--text);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 9px;
-        }
-
-        .divider {
-            height: 1px;
-            margin: 8px 0;
-            background: var(--border);
-        }
-
-        .checkbox-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            color: var(--text-dim);
-            font-size: 9px;
-        }
-
-        input[type="range"] {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 4px;
-            border-radius: 999px;
-            background: var(--border-hi);
-            outline: none;
-            cursor: pointer;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background: var(--accent);
-            box-shadow: 0 0 8px rgba(124,109,250,0.8);
-            cursor: pointer;
-        }
-
-        .toggle {
+        .logo {
+            font-family: 'Unbounded', sans-serif;
+            font-weight: 900;
+            font-size: clamp(16px, 4vw, 22px);
+            letter-spacing: 0.05em;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 40px rgba(0, 240, 255, 0.3);
             position: relative;
-            width: 34px;
-            height: 18px;
-            flex-shrink: 0;
         }
 
-        .toggle input {
-            position: absolute;
-            opacity: 0;
-            width: 0;
-            height: 0;
+        .score-display {
+            display: flex;
+            gap: 16px;
+            align-items: center;
         }
 
-        .toggle-track {
-            position: absolute;
-            inset: 0;
-            background: var(--border-hi);
-            border-radius: 999px;
-            cursor: pointer;
-            transition: background 0.2s, box-shadow 0.2s;
-        }
-
-        .toggle-thumb {
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background: #fff;
-            pointer-events: none;
-            transition: transform 0.2s;
-        }
-
-        .toggle input:checked + .toggle-track {
-            background: var(--accent);
-            box-shadow: 0 0 10px rgba(124,109,250,0.7);
-        }
-
-        .toggle input:checked ~ .toggle-thumb {
-            transform: translateX(16px);
-        }
-
-        #board-area {
-            min-width: 0;
+        .stat-chip {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: 8px;
+            gap: 2px;
+            min-width: 60px;
         }
 
-        #next-panel {
-            width: 100%;
-            max-width: 320px;
-            padding: 6px 8px;
+        .stat-label {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            text-transform: uppercase;
         }
 
-        #board-wrap {
+        .stat-number {
+            font-family: 'Unbounded', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--text-primary);
+            text-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+        }
+
+        #game-container {
+            flex: 1;
+            display: flex;
+            gap: 12px;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        .side-panel {
+            flex-shrink: 0;
+            width: 100px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .info-card {
+            background: rgba(18, 18, 28, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
             position: relative;
             overflow: hidden;
-            width: min(56vw, calc(100svh - 280px));
-            max-width: 300px;
-            border: 1px solid var(--border-hi);
-            border-radius: 10px;
-            box-shadow: var(--shadow-soft), inset 0 0 40px rgba(0,0,0,0.4);
-            background: var(--surface-2);
+        }
+
+        .info-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            opacity: 0.5;
+        }
+
+        .card-label {
+            font-size: 8px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .preview-canvas {
+            width: 100%;
+            height: auto;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        .level-display {
+            font-family: 'Unbounded', sans-serif;
+            font-weight: 900;
+            font-size: 32px;
+            color: var(--accent);
+            text-shadow: 0 0 20px var(--accent);
+            text-align: center;
+        }
+
+        #play-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            gap: 8px;
+        }
+
+        #board-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            min-height: 0;
+        }
+
+        #board-frame {
+            position: relative;
+            max-width: 100%;
+            max-height: 100%;
+            aspect-ratio: 10 / 20;
+            background: var(--deep);
+            border: 2px solid var(--border-glow);
+            border-radius: 8px;
+            box-shadow:
+                    0 0 0 1px rgba(0, 240, 255, 0.1),
+                    0 0 40px rgba(0, 0, 0, 0.8),
+                    inset 0 0 60px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+        }
+
+        #board-frame::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta));
+            opacity: 0.15;
+            z-index: -1;
+            filter: blur(20px);
         }
 
         #canvas {
             display: block;
             width: 100%;
-            height: auto;
-            aspect-ratio: 1 / 2;
+            height: 100%;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
-        }
-
-        #holdCanvas,
-        #nextCanvas {
-            display: block;
-            width: 100%;
-            height: auto;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
-            max-height: 50px;
-        }
-
-        #holdCanvas {
-            max-width: 96px;
-            margin: 0 auto;
-        }
-
-        #nextCanvas {
-            max-width: 100%;
-            margin: 0 auto;
         }
 
         #overlay {
             position: absolute;
             inset: 0;
-            z-index: 10;
+            background: rgba(5, 5, 8, 0.95);
+            backdrop-filter: blur(8px);
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(10,10,15,0.86);
-            transition: opacity 0.25s;
+            z-index: 10;
+            transition: opacity 0.3s, visibility 0.3s;
         }
 
         #overlay.hidden {
             opacity: 0;
+            visibility: hidden;
             pointer-events: none;
         }
 
-        #menu-content {
+        .menu-content {
             text-align: center;
-            padding: 10px;
+            padding: 24px;
         }
 
-        #status-text {
-            margin-bottom: 6px;
-            color: var(--text-dim);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 11px;
+        .status-label {
+            font-family: 'Unbounded', sans-serif;
             font-weight: 700;
-            letter-spacing: 3px;
+            font-size: 14px;
+            letter-spacing: 0.2em;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
         }
 
-        #score-text {
-            min-height: 30px;
-            margin-bottom: 18px;
-            color: #fff;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 22px;
+        .final-score {
+            font-family: 'Unbounded', sans-serif;
             font-weight: 900;
+            font-size: 36px;
+            color: var(--text-primary);
+            margin-bottom: 24px;
+            text-shadow: 0 0 30px var(--accent);
         }
 
-        #start-btn {
-            min-height: 42px;
-            padding: 10px 20px;
-            border: 1px solid var(--accent);
-            border-radius: 8px;
+        .game-btn {
             background: transparent;
+            border: 2px solid var(--accent);
             color: var(--accent);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 11px;
+            font-family: 'Unbounded', sans-serif;
             font-weight: 700;
-            letter-spacing: 2px;
+            font-size: 14px;
+            letter-spacing: 0.1em;
+            padding: 14px 32px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.08s;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
         }
 
-        #start-btn:hover {
+        .game-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
             background: var(--accent);
-            color: #fff;
-            box-shadow: 0 0 20px rgba(124,109,250,0.45);
+            opacity: 0;
+            transition: opacity 0.2s;
         }
 
-        #start-btn:active {
-            transform: translateY(1px);
+        .game-btn:hover::before,
+        .game-btn:active::before {
+            opacity: 0.15;
+        }
+
+        .game-btn:hover {
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .game-btn:active {
+            transform: translateY(0);
+        }
+
+        #controls-section {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .mode-selector {
+            flex: 1;
+            display: flex;
+            gap: 6px;
+            background: rgba(18, 18, 28, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 8px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 11px;
+            padding: 10px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .mode-btn:hover {
+            border-color: var(--border-glow);
+            color: var(--text-primary);
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg,
+            rgba(0, 240, 255, 0.15),
+            rgba(255, 0, 170, 0.15));
+            border-color: var(--accent);
+            color: var(--accent);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+        }
+
+        .level-selector {
+            flex-shrink: 0;
+            background: rgba(18, 18, 28, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .level-selector label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        .level-selector select {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 10px;
+            border-radius: 6px;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .level-selector select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
         }
 
         #touch-controls {
             display: none;
-            width: 100%;
-            max-width: min(96vw, 420px);
-            margin-top: 4px;
-            user-select: none;
-            -webkit-user-select: none;
+            flex-shrink: 0;
+            padding: 8px;
+            gap: 8px;
+            background: rgba(18, 18, 28, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: 10px;
         }
 
-        .touch-row {
+        .control-grid {
             display: grid;
             gap: 8px;
         }
 
-        .touch-row.top {
+        .control-grid.top {
             grid-template-columns: repeat(3, 1fr);
-            margin-bottom: 8px;
         }
 
-        .touch-row.bottom {
+        .control-grid.bottom {
             grid-template-columns: repeat(4, 1fr);
         }
 
         .touch-btn {
+            background: linear-gradient(135deg, var(--surface), var(--deep));
+            border: 1px solid var(--border-glow);
+            color: var(--text-primary);
+            font-family: 'Unbounded', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            min-height: 56px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.1s;
             position: relative;
             overflow: hidden;
-            min-height: 52px;
-            border: 1px solid var(--border-hi);
-            border-radius: 12px;
-            background: linear-gradient(180deg, #1a1a24, #121218);
-            color: #fff;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            cursor: pointer;
-            transition: transform 0.08s, border-color 0.1s, box-shadow 0.1s, background 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
         }
 
         .touch-btn::before {
             content: '';
             position: absolute;
             inset: 0;
-            background: radial-gradient(circle at center, rgba(124,109,250,0.2), transparent 70%);
+            background: linear-gradient(135deg, var(--accent), var(--accent-alt));
             opacity: 0;
             transition: opacity 0.1s;
         }
 
         .touch-btn:active::before,
         .touch-btn.active::before {
-            opacity: 1;
+            opacity: 0.3;
         }
 
         .touch-btn:active,
         .touch-btn.active {
-            transform: scale(0.98);
             border-color: var(--accent);
-            background: linear-gradient(180deg, rgba(124,109,250,0.3), rgba(124,109,250,0.15));
-            box-shadow: 0 0 16px rgba(124,109,250,0.35), inset 0 0 12px rgba(124,109,250,0.18);
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.3);
+            transform: scale(0.95);
         }
 
-        @media (min-width: 701px) {
-            body {
-                justify-content: center;
-                padding: 12px;
-            }
-
-            h1 {
-                font-size: 24px;
-                margin-bottom: 10px;
-            }
-
-            #mode-bar {
-                gap: 8px;
-                padding: 8px 10px;
-                margin-bottom: 10px;
-            }
-
-            .mode-btn {
-                min-height: 38px;
-                padding: 8px 14px;
-                font-size: 10px;
-            }
-
-            #start-level,
-            select {
-                min-height: 38px;
-            }
+        .touch-btn span {
+            position: relative;
+            z-index: 1;
         }
 
-        @media (max-width: 700px) {
-            body {
-                padding: 6px 6px calc(6px + var(--safe-bottom));
-            }
-
-            h1 {
-                font-size: clamp(13px, 3.1vw, 16px);
-                letter-spacing: clamp(2px, 0.8vw, 4px);
-                margin-bottom: 5px;
-            }
-
-            #mode-bar {
-                gap: 4px;
-                padding: 5px;
-                margin-bottom: 5px;
-            }
-
-            .mode-sep {
-                display: none;
-            }
-
-            .mode-btn {
-                flex: 1 1 calc(50% - 4px);
-                min-width: 100px;
-                min-height: 32px;
-                padding: 5px 8px;
-                font-size: 8px;
-            }
-
-            #level-select-wrap {
-                width: 100%;
-                justify-content: center;
-                margin: 4px 0 0;
-            }
-
-            #start-level,
-            select {
-                min-height: 32px;
-                padding: 5px 8px;
-                font-size: 10px;
-            }
-
-            #start-level {
-                width: 64px;
-            }
-
-            #wrapper {
-                grid-template-columns: 1fr;
-                gap: 6px;
-                justify-items: center;
-            }
-
-            #board-area {
-                order: 1;
-                width: 100%;
-                max-width: 340px;
-                gap: 6px;
-            }
-
-            .col {
-                width: 100%;
-                max-width: min(96vw, 420px);
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 6px;
-            }
-
-            .col .panel {
-                width: 100%;
-            }
-
-            .label {
-                font-size: 7px;
-                letter-spacing: 1.5px;
-                margin-bottom: 4px;
-            }
-
-            .stat-value {
-                font-size: 14px;
-            }
-
-            #hi-score-val {
-                font-size: 11px;
-            }
-
-            #combo-panel {
-                min-height: 32px;
-            }
-
-            #combo-text {
-                font-size: 8px;
-            }
-
-            #next-panel {
-                max-width: 340px;
-                padding: 5px 8px;
-            }
-
-            #board-wrap {
-                width: min(62vw, calc(100svh - 330px));
-                max-width: 280px;
-                min-width: 220px;
-            }
-
-            #holdCanvas {
-                max-width: 72px;
-            }
-
-            #touch-controls.show {
-                display: block;
-            }
-
-            .touch-btn {
-                min-height: 48px;
-                font-size: 11px;
-            }
-
-            #status-text {
-                font-size: 10px;
-            }
-
-            #score-text {
-                font-size: 20px;
-            }
-
-            #start-btn {
-                min-height: 38px;
-                padding: 8px 18px;
-                font-size: 10px;
-            }
+        #combo-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Unbounded', sans-serif;
+            font-weight: 900;
+            font-size: 24px;
+            color: var(--neon-yellow);
+            text-shadow: 0 0 40px var(--neon-yellow);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 5;
+            transition: opacity 0.2s;
+            letter-spacing: 0.1em;
         }
 
-        @media (max-width: 700px) and (max-height: 700px) {
-            body {
-                padding: 4px 4px calc(4px + var(--safe-bottom));
+        #combo-display.show {
+            opacity: 1;
+            animation: comboFloat 1s ease-out;
+        }
+
+        @keyframes comboFloat {
+            0% { transform: translate(-50%, -50%) scale(0.8); }
+            50% { transform: translate(-50%, -60%) scale(1.1); }
+            100% { transform: translate(-50%, -70%) scale(1); }
+        }
+
+        @media (min-width: 900px) {
+            #app {
+                padding: 20px;
             }
 
-            h1 {
-                font-size: 12px;
-                letter-spacing: 2px;
-                margin-bottom: 4px;
-            }
-
-            #mode-bar {
-                gap: 3px;
-                padding: 4px;
-                margin-bottom: 4px;
-            }
-
-            .mode-btn {
-                min-height: 28px;
-                padding: 4px 6px;
-                font-size: 7px;
-            }
-
-            #start-level,
-            select {
-                min-height: 28px;
-                padding: 4px 6px;
-                font-size: 9px;
-            }
-
-            #start-level {
-                width: 56px;
-            }
-
-            .panel {
-                padding: 5px 7px;
-            }
-
-            .col {
-                gap: 5px;
-            }
-
-            .label {
-                font-size: 6px;
-                margin-bottom: 3px;
-            }
-
-            .stat-value {
-                font-size: 12px;
-            }
-
-            #hi-score-val {
-                font-size: 10px;
-            }
-
-            #combo-panel {
-                min-height: 28px;
-            }
-
-            #combo-text {
-                font-size: 7px;
-            }
-
-            #next-panel {
-                padding: 1px 2px;
-            }
-
-            #board-wrap {
-                width: min(56vw, calc(100svh - 285px));
-                max-width: 240px;
-                min-width: 200px;
-            }
-
-            #holdCanvas {
-                max-width: 64px;
-            }
-
-            .touch-row {
-                gap: 6px;
-            }
-
-            .touch-row.top {
-                margin-bottom: 6px;
-            }
-
-            .touch-btn {
-                min-height: 42px;
-                font-size: 10px;
-                border-radius: 10px;
-            }
-
-            #status-text {
-                font-size: 9px;
-            }
-
-            #score-text {
-                font-size: 18px;
+            header {
+                padding: 16px 24px;
                 margin-bottom: 16px;
             }
 
-            #start-btn {
-                min-height: 34px;
-                padding: 7px 16px;
+            .logo {
+                font-size: 28px;
+            }
+
+            .stat-chip {
+                min-width: 80px;
+            }
+
+            .stat-number {
+                font-size: 20px;
+            }
+
+            #game-container {
+                gap: 20px;
+            }
+
+            .side-panel {
+                width: 140px;
+                gap: 12px;
+            }
+
+            .info-card {
+                padding: 16px;
+            }
+
+            .card-label {
                 font-size: 9px;
-            }
-        }
-
-        @media (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
-            body {
-                padding: 4px;
+                margin-bottom: 10px;
             }
 
-            h1 {
-                font-size: 11px;
-                margin-bottom: 3px;
+            #controls-section {
+                gap: 12px;
             }
 
-            #mode-bar {
-                padding: 3px;
-                margin-bottom: 3px;
+            .mode-selector {
+                padding: 10px;
+                gap: 8px;
             }
 
             .mode-btn {
-                min-height: 26px;
-                font-size: 7px;
+                font-size: 12px;
+                padding: 12px 10px;
             }
 
-            #wrapper {
-                grid-template-columns: auto 1fr auto;
-                gap: 6px;
-                max-width: 100%;
+            .level-selector {
+                padding: 10px 16px;
+                gap: 10px;
             }
 
-            .col {
-                width: auto;
-                max-width: 160px;
-                display: grid;
-                grid-template-columns: 1fr;
-                gap: 4px;
+            .level-selector select {
+                font-size: 13px;
+                padding: 8px 12px;
+            }
+        }
+
+        @media (max-width: 899px) {
+            .score-display {
+                gap: 10px;
             }
 
-            #board-area {
-                order: 0;
-                width: auto;
-                max-width: none;
+            .stat-chip {
+                min-width: 50px;
             }
 
-            #next-panel {
-                max-width: 360px;
+            .stat-label {
+                font-size: 8px;
             }
 
-            #board-wrap {
-                width: auto;
-                height: calc(100svh - 120px);
-                max-height: 360px;
-                min-width: 0;
+            .stat-number {
+                font-size: 14px;
+            }
+
+            #game-container {
+                flex-direction: column;
+            }
+
+            .side-panel.left {
+                width: 100%;
+                flex-direction: row;
+                order: 1;
+            }
+
+            .side-panel.left .info-card {
+                flex: 1;
+            }
+
+            .side-panel.right {
+                width: 100%;
+                flex-direction: row;
+                order: 3;
+            }
+
+            .side-panel.right .info-card {
+                flex: 1;
+            }
+
+            #play-area {
+                order: 2;
+            }
+
+            #controls-section {
+                flex-direction: column;
+                order: 4;
+            }
+
+            .mode-selector {
+                flex-wrap: wrap;
+            }
+
+            .mode-btn {
+                flex: 1 1 calc(50% - 3px);
+                min-width: 100px;
+            }
+
+            .level-selector {
+                justify-content: center;
+            }
+
+            #touch-controls.show {
+                display: flex;
+                flex-direction: column;
+                order: 5;
+            }
+
+            .preview-canvas {
+                max-width: 80px;
+                margin: 0 auto;
+            }
+
+            .level-display {
+                font-size: 24px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            header {
+                padding: 10px 12px;
+            }
+
+            .logo {
+                font-size: 14px;
+            }
+
+            .stat-chip {
+                min-width: 45px;
+            }
+
+            .stat-number {
+                font-size: 12px;
+            }
+
+            .mode-btn {
+                font-size: 10px;
+                padding: 8px 6px;
+            }
+
+            .touch-btn {
+                min-height: 50px;
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 900px) and (orientation: landscape) {
+            #game-container {
+                flex-direction: row;
+            }
+
+            .side-panel.left,
+            .side-panel.right {
+                width: 120px;
+                flex-direction: column;
+            }
+
+            .side-panel.left {
+                order: 1;
+            }
+
+            #play-area {
+                order: 2;
+            }
+
+            .side-panel.right {
+                order: 3;
+            }
+
+            #controls-section {
+                display: none;
             }
 
             #touch-controls {
                 display: none !important;
             }
-
-            .panel {
-                padding: 4px 6px;
-            }
-
-            .label {
-                font-size: 6px;
-            }
-
-            .stat-value {
-                font-size: 11px;
-            }
         }
 
         @media (hover: none) and (pointer: coarse) {
             #touch-controls.show {
-                display: block;
+                display: flex;
             }
         }
     </style>
 </head>
 <body>
 <div id="app">
-    <h1>TETRIS</h1>
-
-    <div id="mode-bar" role="toolbar" aria-label="Game mode selection">
-        <span class="mode-label">MODE</span>
-        <button type="button" class="mode-btn" data-mode="0">NES</button>
-        <button type="button" class="mode-btn active" data-mode="1">GUIDELINE</button>
-        <button type="button" class="mode-btn" data-mode="2">TGM</button>
-        <button type="button" class="mode-btn" data-mode="99">CUSTOM</button>
-        <div class="mode-sep" aria-hidden="true"></div>
-        <div id="level-select-wrap">
-            <span class="mode-label">START LVL</span>
-            <select id="start-level" aria-label="Start level">
-                <option value="0">0</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
-                <option value="7">7</option>
-                <option value="8">8</option>
-                <option value="9">9</option>
-                <option value="10">10</option>
-                <option value="15">15</option>
-                <option value="19">19</option>
-                <option value="29">29</option>
-            </select>
+    <header>
+        <div class="logo">TETRIS ZERO</div>
+        <div class="score-display">
+            <div class="stat-chip">
+                <div class="stat-label">Score</div>
+                <div class="stat-number" id="score">0</div>
+            </div>
+            <div class="stat-chip">
+                <div class="stat-label">Best</div>
+                <div class="stat-number" id="best">0</div>
+            </div>
         </div>
-    </div>
+    </header>
 
-    <div id="wrapper">
-        <div class="col" id="left-col">
-            <div class="panel">
-                <div class="label">Hold</div>
-                <canvas id="holdCanvas" aria-label="Hold piece preview"></canvas>
+    <div id="game-container">
+        <aside class="side-panel left">
+            <div class="info-card">
+                <div class="card-label">Hold</div>
+                <canvas id="holdCanvas" class="preview-canvas"></canvas>
+            </div>
+            <div class="info-card">
+                <div class="card-label">Level</div>
+                <div class="level-display" id="level">0</div>
+            </div>
+        </aside>
+
+        <main id="play-area">
+            <div id="board-container">
+                <div id="board-frame">
+                    <canvas id="canvas"></canvas>
+                    <div id="overlay">
+                        <div class="menu-content">
+                            <div class="status-label" id="status">READY</div>
+                            <div class="final-score" id="finalScore"></div>
+                            <button class="game-btn" id="startBtn">START GAME</button>
+                        </div>
+                    </div>
+                    <div id="combo-display"></div>
+                </div>
             </div>
 
-            <div class="panel">
-                <div class="label">Score</div>
-                <div class="stat-value" id="score">0</div>
-            </div>
-
-            <div class="panel" id="config-panel">
-                <div class="label">Config</div>
-
-                <div class="config-row">
-                    <div class="config-label">DAS <span id="das-val">10</span></div>
-                    <input type="range" id="das" min="0" max="30" value="10" />
+            <div id="controls-section">
+                <div class="mode-selector">
+                    <button class="mode-btn" data-mode="0">NES</button>
+                    <button class="mode-btn active" data-mode="1">Modern</button>
+                    <button class="mode-btn" data-mode="2">TGM</button>
+                    <button class="mode-btn" data-mode="99">Custom</button>
                 </div>
-
-                <div class="config-row">
-                    <div class="config-label">ARR <span id="arr-val">2</span></div>
-                    <input type="range" id="arr" min="0" max="10" value="2" />
-                </div>
-
-                <div class="config-row">
-                    <div class="config-label">LOCK <span id="lock-val">30</span></div>
-                    <input type="range" id="lock" min="0" max="60" value="30" />
-                </div>
-
-                <div class="divider"></div>
-
-                <div class="checkbox-row">
-                    <span>Ghost</span>
-                    <label class="toggle">
-                        <input type="checkbox" id="ghost" checked />
-                        <div class="toggle-track"></div>
-                        <div class="toggle-thumb"></div>
-                    </label>
-                </div>
-
-                <div class="config-row">
-                    <div class="config-label">Generator</div>
-                    <select id="generator">
-                        <option value="0">7-Bag</option>
-                        <option value="1">NES Random</option>
+                <div class="level-selector">
+                    <label>Start</label>
+                    <select id="startLevel">
+                        <option value="0">Lvl 0</option>
+                        <option value="1">Lvl 1</option>
+                        <option value="2">Lvl 2</option>
+                        <option value="3">Lvl 3</option>
+                        <option value="4">Lvl 4</option>
+                        <option value="5">Lvl 5</option>
+                        <option value="7">Lvl 7</option>
+                        <option value="10">Lvl 10</option>
+                        <option value="15">Lvl 15</option>
                     </select>
                 </div>
             </div>
+        </main>
+
+        <aside class="side-panel right">
+            <div class="info-card">
+                <div class="card-label">Lines</div>
+                <div class="level-display" id="lines">0</div>
+            </div>
+            <div class="info-card">
+                <div class="card-label">Next</div>
+                <canvas id="nextCanvas" class="preview-canvas"></canvas>
+            </div>
+        </aside>
+    </div>
+
+    <div id="touch-controls">
+        <div class="control-grid top">
+            <button class="touch-btn" data-action="rotateLeft"><span>↺</span></button>
+            <button class="touch-btn" data-action="hardDrop"><span>▼▼</span></button>
+            <button class="touch-btn" data-action="rotateRight"><span>↻</span></button>
         </div>
-
-        <div id="board-area">
-            <div class="panel" id="next-panel">
-                <div class="label">Next</div>
-                <canvas id="nextCanvas" aria-label="Next pieces preview"></canvas>
-            </div>
-
-            <div id="board-wrap">
-                <canvas id="canvas" aria-label="Tetris game board"></canvas>
-                <div id="overlay">
-                    <div id="menu-content">
-                        <div id="status-text">READY</div>
-                        <div id="score-text"></div>
-                        <button type="button" id="start-btn">START</button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="touch-controls" aria-label="Touch controls">
-                <div class="touch-row top">
-                    <button type="button" class="touch-btn" data-action="rotateLeft" aria-label="Rotate left">↺</button>
-                    <button type="button" class="touch-btn" data-action="hardDrop" aria-label="Hard drop">DROP</button>
-                    <button type="button" class="touch-btn" data-action="rotateRight" aria-label="Rotate right">↻</button>
-                </div>
-                <div class="touch-row bottom">
-                    <button type="button" class="touch-btn" data-action="left" aria-label="Move left">◀</button>
-                    <button type="button" class="touch-btn" data-action="down" aria-label="Soft drop">▼</button>
-                    <button type="button" class="touch-btn" data-action="right" aria-label="Move right">▶</button>
-                    <button type="button" class="touch-btn" data-action="hold" aria-label="Hold piece">HOLD</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="col" id="right-col">
-            <div class="panel">
-                <div class="label">Best</div>
-                <div id="hi-score-val">0</div>
-            </div>
-
-            <div class="panel">
-                <div class="label">Level</div>
-                <div class="stat-value" id="level">0</div>
-            </div>
-
-            <div class="panel">
-                <div class="label">Lines</div>
-                <div class="stat-value" id="lines">0</div>
-            </div>
-
-            <div class="panel" id="combo-panel">
-                <div id="combo-text"></div>
-            </div>
+        <div class="control-grid bottom">
+            <button class="touch-btn" data-action="left"><span>◀</span></button>
+            <button class="touch-btn" data-action="down"><span>▼</span></button>
+            <button class="touch-btn" data-action="right"><span>▶</span></button>
+            <button class="touch-btn" data-action="hold"><span>HOLD</span></button>
         </div>
     </div>
 </div>
@@ -1034,18 +826,15 @@
     const MINI_BLOCK = 24;
     const COLS = 10;
     const ROWS = 20;
-
-    const IS_MOBILE = window.matchMedia('(max-width: 700px)').matches;
-    const PREVIEW_COUNT = IS_MOBILE ? 4 : 5;
-    const NEXT_MINI_BLOCK = IS_MOBILE ? 10 : 20;
+    const MOBILE_PREVIEW = window.matchMedia('(max-width: 899px)').matches ? 3 : 5;
 
     const COLORS = [
         '#000000',
         '#cc44ff', '#4466ff', '#33ddff',
         '#ff8833', '#ffdd00', '#33ee77', '#ff3355',
         null, null, null,
-        '#cc44ff2a', '#4466ff2a', '#33ddff2a',
-        '#ff88332a', '#ffdd002a', '#33ee772a', '#ff33552a',
+        '#cc44ff3a', '#4466ff3a', '#33ddff3a',
+        '#ff88333a', '#ffdd003a', '#33ee773a', '#ff33553a',
     ];
 
     const PIECE_CELLS = [
@@ -1060,23 +849,18 @@
     ];
 
     const KEY_MAP = {
-        ArrowLeft: 0,
-        ArrowRight: 1,
-        ArrowDown: 2,
-        ArrowUp: 3,
-        KeyZ: 4,
-        KeyX: 5,
-        KeyC: 6,
+        'ArrowLeft': 0,
+        'ArrowRight': 1,
+        'ArrowDown': 2,
+        'ArrowUp': 3,
+        'KeyZ': 4,
+        'KeyX': 5,
+        'KeyC': 6,
     };
 
-    const TOUCH_ACTION_MAP = {
-        left: 0,
-        right: 1,
-        down: 2,
-        hardDrop: 3,
-        rotateLeft: 4,
-        rotateRight: 5,
-        hold: 6,
+    const TOUCH_MAP = {
+        left: 0, right: 1, down: 2, hardDrop: 3,
+        rotateLeft: 4, rotateRight: 5, hold: 6,
     };
 
     const EVENT_LINE_CLEAR = 0;
@@ -1084,15 +868,14 @@
     const EVENT_LEVEL_UP = 2;
     const EVENT_TETRIS = 3;
     const EVENT_TSPIN = 6;
-    const FLASH_DURATION = 20;
-    const LOCK_FLASH_DUR = 8;
 
-    let flashRows = [];
-    let flashTimer = 0;
-    let lockFlashCells = [];
-    let lockFlashTimer = 0;
+    const CLEAR_EFFECT_FRAMES = 12;
+    const LOCK_FLASH_FRAMES = 8;
+
+    let clearEffects = [];
+    let lockFlash = [];
+    let lockTimer = 0;
     let comboTimer = 0;
-    let rafId = null;
 
     const canvas = document.getElementById('canvas');
     canvas.width = COLS * BLOCK_SIZE;
@@ -1105,58 +888,47 @@
     const holdCtx = holdCanvas.getContext('2d');
 
     const nextCanvas = document.getElementById('nextCanvas');
-    nextCanvas.width = PREVIEW_COUNT * 4 * NEXT_MINI_BLOCK;
-    nextCanvas.height = 4 * NEXT_MINI_BLOCK;
+    nextCanvas.width = 4 * MINI_BLOCK;
+    nextCanvas.height = MOBILE_PREVIEW * 4 * MINI_BLOCK;
     const nextCtx = nextCanvas.getContext('2d');
 
     const scoreEl = document.getElementById('score');
+    const bestEl = document.getElementById('best');
     const levelEl = document.getElementById('level');
     const linesEl = document.getElementById('lines');
-    const comboEl = document.getElementById('combo-text');
+    const comboEl = document.getElementById('combo-display');
     const overlay = document.getElementById('overlay');
-    const statusText = document.getElementById('status-text');
-    const scoreText = document.getElementById('score-text');
-    const startBtn = document.getElementById('start-btn');
-    const boardWrap = document.getElementById('board-wrap');
-    const hiScoreEl = document.getElementById('hi-score-val');
+    const statusEl = document.getElementById('status');
+    const finalScoreEl = document.getElementById('finalScore');
+    const startBtn = document.getElementById('startBtn');
+    const boardFrame = document.getElementById('board-frame');
     const touchControls = document.getElementById('touch-controls');
 
     const Stats = {
-        key: 'tetris_stats_v1',
-        defaults() {
-            return {
-                highScore: 0,
-                gamesPlayed: 0,
-                totalLines: 0,
-            };
-        },
+        key: 'tetris_zero_v1',
         load() {
             try {
-                return JSON.parse(localStorage.getItem(this.key)) || this.defaults();
+                return JSON.parse(localStorage.getItem(this.key)) || { highScore: 0 };
             } catch {
-                return this.defaults();
+                return { highScore: 0 };
             }
         },
-        save(value) {
-            try {
-                localStorage.setItem(this.key, JSON.stringify(value));
-            } catch {}
-        },
-        recordGame(score, lines) {
-            const stats = this.load();
-            stats.gamesPlayed += 1;
-            stats.totalLines += lines;
-            if (score > stats.highScore) stats.highScore = score;
-            this.save(stats);
-            return stats;
-        },
+        save(score) {
+            const current = this.load();
+            if (score > current.highScore) {
+                current.highScore = score;
+                try {
+                    localStorage.setItem(this.key, JSON.stringify(current));
+                } catch {}
+            }
+            return current;
+        }
     };
 
-    function refreshHiScore() {
-        hiScoreEl.textContent = Stats.load().highScore.toLocaleString();
+    function updateBestScore() {
+        bestEl.textContent = Stats.load().highScore.toLocaleString();
     }
-
-    refreshHiScore();
+    updateBestScore();
 
     function isTouchDevice() {
         return (
@@ -1166,17 +938,18 @@
         );
     }
 
-    function updateTouchControlsVisibility() {
-        touchControls.classList.toggle('show', isTouchDevice());
+    function updateTouchVisibility() {
+        if (isTouchDevice()) {
+            touchControls.classList.add('show');
+        }
     }
+    updateTouchVisibility();
+    window.addEventListener('resize', updateTouchVisibility);
 
-    window.addEventListener('resize', updateTouchControlsVisibility);
-    updateTouchControlsVisibility();
-
-    function showOverlay(status, showScore, buttonLabel) {
-        statusText.textContent = status;
-        scoreText.textContent = showScore ? `${scoreEl.textContent}` : '';
-        startBtn.textContent = buttonLabel;
+    function showOverlay(status, score, btnText) {
+        statusEl.textContent = status;
+        finalScoreEl.textContent = score || '';
+        startBtn.textContent = btnText;
         overlay.classList.remove('hidden');
     }
 
@@ -1186,150 +959,98 @@
 
     let activeMode = 1;
 
-    document.querySelectorAll('.mode-btn').forEach((btn) => {
+    document.querySelectorAll('.mode-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.mode-btn').forEach((b) => b.classList.remove('active'));
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            activeMode = Number.parseInt(btn.dataset.mode, 10);
-
-            const isCustom = activeMode === 99;
-            document.getElementById('config-panel').style.display = isCustom ? 'block' : 'none';
+            activeMode = parseInt(btn.dataset.mode);
         });
     });
 
     function getStartLevel() {
-        return Number.parseInt(document.getElementById('start-level').value, 10);
-    }
-
-    function syncSlider(id, valueId, value) {
-        document.getElementById(id).value = value;
-        document.getElementById(valueId).textContent = value;
+        return parseInt(document.getElementById('startLevel').value);
     }
 
     function applyRuleset(game, mode, startLevel) {
         if (mode === 0) {
             game.use_nes_ruleset(startLevel);
-            syncSlider('das', 'das-val', 16);
-            syncSlider('arr', 'arr-val', 6);
-            syncSlider('lock', 'lock-val', 0);
-            document.getElementById('ghost').checked = false;
-            document.getElementById('generator').value = '1';
         } else if (mode === 1) {
             game.use_guideline_ruleset(startLevel);
-            syncSlider('das', 'das-val', 10);
-            syncSlider('arr', 'arr-val', 2);
-            syncSlider('lock', 'lock-val', 30);
-            document.getElementById('ghost').checked = true;
-            document.getElementById('generator').value = '0';
         } else if (mode === 2) {
             game.use_guideline_ruleset(startLevel);
         }
     }
 
-    function wireConfig(game) {
-        const sliders = [
-            { id: 'das', valueId: 'das-val', setter: (v) => game.set_das(v) },
-            { id: 'arr', valueId: 'arr-val', setter: (v) => game.set_arr(v) },
-            { id: 'lock', valueId: 'lock-val', setter: (v) => game.set_lock_delay(v) },
-        ];
-
-        for (const { id, valueId, setter } of sliders) {
-            document.getElementById(id).addEventListener('input', (e) => {
-                const value = Number.parseInt(e.target.value, 10);
-                document.getElementById(valueId).textContent = value;
-                setter(value);
+    function addLineClearEffects(rows, isTetris = false) {
+        for (const row of rows) {
+            clearEffects.push({
+                row,
+                timer: CLEAR_EFFECT_FRAMES,
+                maxTimer: CLEAR_EFFECT_FRAMES,
+                isTetris,
             });
         }
-
-        document.getElementById('ghost').addEventListener('change', (e) => {
-            game.set_ghost(e.target.checked);
-        });
-
-        document.getElementById('generator').addEventListener('change', (e) => {
-            game.set_generator(Number.parseInt(e.target.value, 10));
-        });
-    }
-
-    function showComboText(text) {
-        comboEl.textContent = text;
-        comboEl.classList.add('show');
-        comboTimer = 90;
     }
 
     function processEvents(game) {
         const events = game.drain_events();
-
         for (let i = 0; i < events.length; i += 5) {
             const kind = events[i];
             const data = events.slice(i + 1, i + 5);
 
-            switch (kind) {
-                case EVENT_LINE_CLEAR:
-                    flashRows = data.filter((r) => r !== 255);
-                    flashTimer = FLASH_DURATION;
-                    break;
+            if (kind === EVENT_LINE_CLEAR || kind === EVENT_TETRIS) {
+                const rows = [...data].filter(r => r !== 255);
+                addLineClearEffects(rows, kind === EVENT_TETRIS);
 
-                case EVENT_TETRIS:
-                    flashRows = data.filter((r) => r !== 255);
-                    flashTimer = FLASH_DURATION;
-                    showComboText('TETRIS');
-                    break;
+                if (kind === EVENT_TETRIS) {
+                    showCombo('TETRIS');
+                }
+            } else if (kind === EVENT_PIECE_LOCK) {
+                lockFlash = [...data].filter(p => p !== 255);
+                lockTimer = LOCK_FLASH_FRAMES;
+            } else if (kind === EVENT_LEVEL_UP) {
+                levelEl.style.animation = 'none';
+                setTimeout(() => {
+                    levelEl.style.animation = 'pulse 0.5s ease-out';
+                }, 10);
 
-                case EVENT_PIECE_LOCK:
-                    lockFlashCells = data.filter((p) => p !== 255);
-                    lockFlashTimer = LOCK_FLASH_DUR;
-                    break;
-
-                case EVENT_LEVEL_UP:
-                    levelEl.animate(
-                        [
-                            { color: '#7c6dfa', textShadow: '0 0 20px #7c6dfa' },
-                            { color: '#fff', textShadow: 'none' },
-                        ],
-                        { duration: 500, easing: 'ease-out' }
-                    );
-
-                    boardWrap.animate(
-                        [
-                            { boxShadow: '0 0 60px rgba(124,109,250,0.5)' },
-                            { boxShadow: '0 0 40px rgba(124,109,250,0.08)' },
-                        ],
-                        { duration: 600, easing: 'ease-out' }
-                    );
-                    break;
-
-                case EVENT_TSPIN: {
-                    const isMini = data[0] === 0;
-                    const lines = data[1];
-                    const label = isMini
-                        ? 'T-SPIN MINI'
+                boardFrame.style.animation = 'none';
+                setTimeout(() => {
+                    boardFrame.style.animation = 'glow 0.6s ease-out';
+                }, 10);
+            } else if (kind === EVENT_TSPIN) {
+                const isMini = data[0] === 0;
+                const lines = data[1];
+                const label = isMini
+                    ? 'T-SPIN MINI'
+                    : lines <= 1
+                        ? 'T-SPIN'
                         : lines === 2
                             ? 'T-SPIN DOUBLE'
-                            : lines === 3
-                                ? 'T-SPIN TRIPLE'
-                                : 'T-SPIN';
-
-                    showComboText(label);
-                    break;
-                }
+                            : 'T-SPIN TRIPLE';
+                showCombo(label);
             }
         }
     }
 
+    function showCombo(text) {
+        comboEl.textContent = text;
+        comboEl.classList.add('show');
+        comboTimer = 60;
+    }
+
     function drawBoard(board) {
-        ctx.fillStyle = '#0d0d14';
+        ctx.fillStyle = '#06060c';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
         ctx.lineWidth = 1;
-
         for (let r = 0; r <= ROWS; r++) {
             ctx.beginPath();
             ctx.moveTo(0, r * BLOCK_SIZE);
             ctx.lineTo(canvas.width, r * BLOCK_SIZE);
             ctx.stroke();
         }
-
         for (let c = 0; c <= COLS; c++) {
             ctx.beginPath();
             ctx.moveTo(c * BLOCK_SIZE, 0);
@@ -1338,97 +1059,111 @@
         }
 
         for (let row = 0; row < ROWS; row++) {
-            const rowFlashing = flashRows.includes(row) && flashTimer > 0;
-
             for (let col = 0; col < COLS; col++) {
                 const idx = row * COLS + col;
                 const cell = board[idx];
-                const lockFlashing = lockFlashTimer > 0 && lockFlashCells.includes(idx);
+                const isLockFlash = lockTimer > 0 && lockFlash.includes(idx);
 
-                if (cell === 0 && !lockFlashing) continue;
+                if (cell === 0 && !isLockFlash) continue;
 
                 const x = col * BLOCK_SIZE;
                 const y = row * BLOCK_SIZE;
                 const s = BLOCK_SIZE - 1;
 
-                if (rowFlashing) {
-                    const t = flashTimer / FLASH_DURATION;
-                    ctx.fillStyle = `rgba(255,255,255,${t})`;
-                    ctx.fillRect(x, y, s, s);
-                } else if (lockFlashing && cell !== 0) {
-                    const t = lockFlashTimer / LOCK_FLASH_DUR;
+                if (isLockFlash && cell !== 0) {
+                    const t = lockTimer / LOCK_FLASH_FRAMES;
                     ctx.fillStyle = COLORS[cell];
                     ctx.fillRect(x, y, s, s);
-                    ctx.fillStyle = `rgba(255,255,255,${t * 0.6})`;
+                    ctx.fillStyle = `rgba(255, 255, 255, ${t * 0.5})`;
                     ctx.fillRect(x, y, s, s);
-                } else if (cell !== 0 && COLORS[cell] !== null) {
+                } else if (cell !== 0 && COLORS[cell]) {
                     ctx.fillStyle = COLORS[cell];
                     ctx.fillRect(x, y, s, s);
 
                     if (cell < 11) {
-                        ctx.fillStyle = 'rgba(255,255,255,0.18)';
-                        ctx.fillRect(x + 1, y + 1, s - 2, 4);
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                        ctx.fillRect(x + 2, y + 2, s - 4, 5);
 
-                        ctx.fillStyle = 'rgba(0,0,0,0.2)';
-                        ctx.fillRect(x + 1, y + s - 4, s - 2, 3);
+                        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                        ctx.fillRect(x + 2, y + s - 6, s - 4, 4);
                     }
                 }
             }
         }
 
-        if (flashTimer > 0) flashTimer -= 1;
-        if (lockFlashTimer > 0) lockFlashTimer -= 1;
+        // Draw line-clear effects on top of the board after the board has already collapsed.
+        // This avoids flashing the new blocks that fell into the cleared row.
+        for (const effect of clearEffects) {
+            const t = effect.timer / effect.maxTimer;
+            const y = effect.row * BLOCK_SIZE + BLOCK_SIZE / 2;
+            const beamHalfHeight = Math.max(2, BLOCK_SIZE * (0.12 + 0.22 * t));
+            const coreAlpha = 0.18 + t * 0.55;
+            const glowAlpha = 0.10 + t * 0.28;
+            const color = effect.isTetris ? '255, 238, 0' : '0, 240, 255';
+
+            // outer glow
+            ctx.fillStyle = `rgba(${color}, ${glowAlpha})`;
+            ctx.fillRect(0, y - beamHalfHeight * 1.8, canvas.width, beamHalfHeight * 3.6);
+
+            // main beam
+            ctx.fillStyle = `rgba(${color}, ${coreAlpha})`;
+            ctx.fillRect(0, y - beamHalfHeight, canvas.width, beamHalfHeight * 2);
+
+            // bright center line
+            ctx.fillStyle = `rgba(255, 255, 255, ${0.2 + t * 0.65})`;
+            ctx.fillRect(0, y - 1, canvas.width, 2);
+
+            // side sweep accents
+            const sweepWidth = canvas.width * (0.18 + (1 - t) * 0.32);
+            const inset = (canvas.width - sweepWidth) / 2;
+            ctx.fillStyle = `rgba(${color}, ${0.08 + t * 0.2})`;
+            ctx.fillRect(inset, y - beamHalfHeight * 1.2, sweepWidth, beamHalfHeight * 2.4);
+        }
+
+        for (let i = clearEffects.length - 1; i >= 0; i--) {
+            clearEffects[i].timer--;
+            if (clearEffects[i].timer <= 0) {
+                clearEffects.splice(i, 1);
+            }
+        }
+
+        if (lockTimer > 0) lockTimer--;
     }
 
-    function drawPieceInPanel(pCtx, kindIndex, offsetX, offsetY, blockSize, dimmed) {
-        if (!kindIndex) return;
-
-        const cells = PIECE_CELLS[kindIndex];
-        const color = dimmed ? '#2a2a3a' : COLORS[kindIndex];
+    function drawPiece(pCtx, kind, offsetY, dimmed) {
+        if (!kind) return;
+        const cells = PIECE_CELLS[kind];
+        const color = dimmed ? '#1a1a28' : COLORS[kind];
 
         for (let r = 0; r < 4; r++) {
             for (let c = 0; c < 4; c++) {
                 if (!cells[r][c]) continue;
-
-                const x = offsetX + c * blockSize;
-                const y = offsetY + r * blockSize;
-                const s = blockSize - 2;
+                const x = c * MINI_BLOCK;
+                const y = offsetY + r * MINI_BLOCK;
+                const s = MINI_BLOCK - 2;
 
                 pCtx.fillStyle = color;
                 pCtx.fillRect(x, y, s, s);
 
                 if (!dimmed) {
-                    pCtx.fillStyle = 'rgba(255,255,255,0.18)';
-                    pCtx.fillRect(
-                        x + 1,
-                        y + 1,
-                        s - 2,
-                        Math.max(2, Math.floor(blockSize * 0.14))
-                    );
+                    pCtx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                    pCtx.fillRect(x + 1, y + 1, s - 2, 3);
                 }
             }
         }
     }
 
-    function drawHold(holdKind, holdUsed) {
-        holdCtx.fillStyle = '#0d0d14';
+    function drawHold(holdKind, used) {
+        holdCtx.fillStyle = '#06060c';
         holdCtx.fillRect(0, 0, holdCanvas.width, holdCanvas.height);
-        drawPieceInPanel(holdCtx, holdKind, 0, 0, MINI_BLOCK, holdUsed);
+        drawPiece(holdCtx, holdKind, 0, used);
     }
 
-    function drawNext(nextPieces) {
-        nextCtx.fillStyle = '#0d0d14';
+    function drawNext(pieces) {
+        nextCtx.fillStyle = '#06060c';
         nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
-
-        for (let i = 0; i < nextPieces.length; i++) {
-            drawPieceInPanel(
-                nextCtx,
-                nextPieces[i],
-                i * 4 * NEXT_MINI_BLOCK,
-                0,
-                NEXT_MINI_BLOCK,
-                false
-            );
+        for (let i = 0; i < pieces.length; i++) {
+            drawPiece(nextCtx, pieces[i], i * 4 * MINI_BLOCK, false);
         }
     }
 
@@ -1440,135 +1175,116 @@
 
     async function main() {
         await init();
-
         const game = new Game();
-        wireConfig(game);
-
         let inputEnabled = false;
-        let lastTime = null;
-        let accumulator = 0;
-        const FRAME_TIME = 1000 / 60;
 
-        document.addEventListener('keydown', (e) => {
+        document.addEventListener('keydown', e => {
             if (!inputEnabled || e.repeat) return;
-
             const key = KEY_MAP[e.code];
-            if (key === undefined) return;
-
-            e.preventDefault();
-            game.key_down(key);
-        });
-
-        document.addEventListener('keyup', (e) => {
-            if (!inputEnabled) return;
-
-            const key = KEY_MAP[e.code];
-            if (key === undefined) return;
-
-            game.key_up(key);
-        });
-
-        function bindTouchButton(button, action) {
-            const key = TOUCH_ACTION_MAP[action];
-            if (key === undefined) return;
-
-            const holdable = action === 'left' || action === 'right' || action === 'down';
-
-            const press = (e) => {
-                if (!inputEnabled) return;
+            if (key !== undefined) {
                 e.preventDefault();
-                button.classList.add('active');
                 game.key_down(key);
-            };
+            }
+        });
 
-            const release = (e) => {
-                if (!inputEnabled) return;
-                e.preventDefault();
-                button.classList.remove('active');
-                game.key_up(key);
-            };
+        document.addEventListener('keyup', e => {
+            if (!inputEnabled) return;
+            const key = KEY_MAP[e.code];
+            if (key !== undefined) game.key_up(key);
+        });
+
+        document.querySelectorAll('.touch-btn').forEach(btn => {
+            const action = btn.dataset.action;
+            const key = TOUCH_MAP[action];
+            if (key === undefined) return;
+
+            const holdable = ['left', 'right', 'down'].includes(action);
 
             if (holdable) {
-                button.addEventListener('pointerdown', press);
-                button.addEventListener('pointerup', release);
-                button.addEventListener('pointercancel', release);
-                button.addEventListener('pointerleave', release);
-            } else {
-                button.addEventListener('pointerdown', (e) => {
+                btn.addEventListener('pointerdown', e => {
                     if (!inputEnabled) return;
                     e.preventDefault();
-                    button.classList.add('active');
+                    btn.classList.add('active');
                     game.key_down(key);
-
+                });
+                const release = e => {
+                    if (!inputEnabled) return;
+                    e.preventDefault();
+                    btn.classList.remove('active');
+                    game.key_up(key);
+                };
+                btn.addEventListener('pointerup', release);
+                btn.addEventListener('pointercancel', release);
+                btn.addEventListener('pointerleave', release);
+            } else {
+                btn.addEventListener('pointerdown', e => {
+                    if (!inputEnabled) return;
+                    e.preventDefault();
+                    btn.classList.add('active');
+                    game.key_down(key);
                     setTimeout(() => {
                         game.key_up(key);
-                        button.classList.remove('active');
+                        btn.classList.remove('active');
                     }, 40);
                 });
             }
-        }
-
-        document.querySelectorAll('#touch-controls [data-action]').forEach((button) => {
-            bindTouchButton(button, button.dataset.action);
         });
 
-        function startGame() {
-            const startLevel = getStartLevel();
+        const FRAME_TIME = 1000 / 60;
+        let acc = 0;
+        let last = null;
+        let rafId = null;
 
-            game.restart(startLevel);
-            applyRuleset(game, activeMode, startLevel);
+        function startGame() {
+            game.restart(getStartLevel());
+            applyRuleset(game, activeMode, getStartLevel());
             game.start();
 
-            flashRows = [];
-            flashTimer = 0;
-            lockFlashCells = [];
-            lockFlashTimer = 0;
+            clearEffects = [];
+            lockFlash = [];
+            lockTimer = 0;
             comboTimer = 0;
 
             inputEnabled = true;
-            lastTime = null;
-            accumulator = 0;
+            last = null;
+            acc = 0;
 
             hideOverlay();
-
             if (rafId) cancelAnimationFrame(rafId);
             rafId = requestAnimationFrame(loop);
         }
 
-        startBtn.addEventListener('click', () => {
-            startGame();
-        });
-
-        function render() {
-            drawBoard(game.get_board());
-            drawHold(game.get_hold_piece(), game.is_hold_used());
-            drawNext(game.get_next_pieces(PREVIEW_COUNT));
-            updateStats(game);
-        }
+        startBtn.addEventListener('click', startGame);
 
         function loop(ts) {
-            if (!lastTime) {
-                lastTime = ts;
+            if (!last) {
+                last = ts;
                 rafId = requestAnimationFrame(loop);
                 return;
             }
 
-            accumulator += Math.min(ts - lastTime, 200);
-            lastTime = ts;
+            acc += Math.min(ts - last, 200);
+            last = ts;
 
-            while (accumulator >= FRAME_TIME) {
+            while (acc >= FRAME_TIME) {
                 game.tick();
-                accumulator -= FRAME_TIME;
+                acc -= FRAME_TIME;
             }
 
             processEvents(game);
 
             if (game.is_game_over()) {
                 inputEnabled = false;
-                Stats.recordGame(game.get_score(), game.get_lines_cleared());
-                refreshHiScore();
-                render();
-                showOverlay('GAME OVER', true, 'RETRY');
+                const score = game.get_score();
+                Stats.save(score);
+                updateBestScore();
+
+                drawBoard(game.get_board());
+                drawHold(game.get_hold_piece(), game.is_hold_used());
+                drawNext(game.get_next_pieces(MOBILE_PREVIEW));
+                updateStats(game);
+
+                showOverlay('GAME OVER', score.toLocaleString(), 'PLAY AGAIN');
                 return;
             }
 
@@ -1576,15 +1292,43 @@
                 comboEl.classList.remove('show');
             }
 
-            render();
+            drawBoard(game.get_board());
+            drawHold(game.get_hold_piece(), game.is_hold_used());
+            drawNext(game.get_next_pieces(MOBILE_PREVIEW));
+            updateStats(game);
+
             rafId = requestAnimationFrame(loop);
         }
 
-        render();
-        showOverlay('READY', false, 'START');
+        drawBoard(game.get_board());
+        drawHold(0, false);
+        drawNext([]);
+        showOverlay('READY', '', 'START GAME');
     }
 
     main();
 </script>
+
+<style>
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.15); }
+    }
+
+    @keyframes glow {
+        0%, 100% {
+            box-shadow:
+                    0 0 0 1px rgba(0, 240, 255, 0.1),
+                    0 0 40px rgba(0, 0, 0, 0.8),
+                    inset 0 0 60px rgba(0, 0, 0, 0.6);
+        }
+        50% {
+            box-shadow:
+                    0 0 0 2px rgba(0, 240, 255, 0.5),
+                    0 0 60px rgba(0, 240, 255, 0.3),
+                    inset 0 0 60px rgba(0, 0, 0, 0.6);
+        }
+    }
+</style>
 </body>
 </html>
