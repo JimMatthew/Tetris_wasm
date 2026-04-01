@@ -1,435 +1,1028 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>TETRIS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg:        #0a0a0f;
-            --surface:   #111118;
-            --border:    #1e1e2e;
+            --bg: #0a0a0f;
+            --surface: #111118;
+            --surface-2: #0d0d14;
+            --border: #1e1e2e;
             --border-hi: #2e2e4e;
-            --text:      #c8c8d8;
-            --text-dim:  #555566;
-            --accent:    #7c6dfa;
-            --accent2:   #fa6d8a;
+            --text: #c8c8d8;
+            --text-dim: #66667a;
+            --accent: #7c6dfa;
+            --accent2: #fa6d8a;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --panel-radius: 10px;
+            --panel-pad: 8px 10px;
+            --shadow-soft: 0 0 40px rgba(124,109,250,0.08);
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior: none;
+        }
 
         body {
+            min-height: 100svh;
             background: var(--bg);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Share Tech Mono', monospace;
             color: var(--text);
-            padding: 24px;
+            font-family: 'Share Tech Mono', monospace;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 8px 8px calc(8px + var(--safe-bottom));
+            overflow-x: hidden;
         }
+
         body::before {
             content: '';
             position: fixed;
             inset: 0;
             background: repeating-linear-gradient(
-                    0deg, transparent, transparent 2px,
-                    rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0,0,0,0.07) 2px,
+                    rgba(0,0,0,0.07) 4px
             );
             pointer-events: none;
             z-index: 100;
         }
 
+        button,
+        select,
+        input {
+            font: inherit;
+        }
+
+        button:focus-visible,
+        select:focus-visible,
+        input:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
         h1 {
             font-family: 'Orbitron', sans-serif;
             font-weight: 900;
-            font-size: 26px;
-            letter-spacing: 12px;
+            font-size: clamp(14px, 3.2vw, 24px);
+            letter-spacing: clamp(3px, 1vw, 10px);
             color: var(--accent);
-            text-shadow: 0 0 30px var(--accent), 0 0 60px rgba(124,109,250,0.3);
-            margin-bottom: 16px;
+            text-shadow: 0 0 30px var(--accent), 0 0 60px rgba(124,109,250,0.25);
+            text-align: center;
+            margin-bottom: 6px;
+            user-select: none;
         }
 
-        /* Mode bar — above the board, most prominent element */
         #mode-bar {
+            width: 100%;
             display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 14px;
+            gap: 6px;
+            margin-bottom: 8px;
+            padding: 6px;
             background: var(--surface);
             border: 1px solid var(--border-hi);
-            border-radius: 6px;
-            padding: 8px 14px;
+            border-radius: 10px;
         }
+
         #mode-bar .mode-label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 8px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--text-dim);
+            user-select: none;
+        }
+
+        .mode-btn {
+            min-height: 34px;
+            padding: 6px 10px;
+            border: 1px solid var(--border-hi);
+            border-radius: 7px;
+            background: transparent;
+            color: var(--text-dim);
             font-family: 'Orbitron', sans-serif;
             font-size: 9px;
             font-weight: 700;
-            letter-spacing: 3px;
-            color: var(--text-dim);
-        }
-        .mode-btn {
-            background: transparent;
-            border: 1px solid var(--border-hi);
-            color: var(--text-dim);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 10px;
-            font-weight: 700;
-            padding: 5px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.15s;
             letter-spacing: 1px;
+            cursor: pointer;
+            transition: border-color 0.15s, color 0.15s, background 0.15s, box-shadow 0.15s, transform 0.08s;
         }
-        .mode-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        .mode-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .mode-btn:active {
+            transform: translateY(1px);
+        }
+
         .mode-btn.active {
             background: var(--accent);
             border-color: var(--accent);
             color: #fff;
-            box-shadow: 0 0 12px rgba(124,109,250,0.4);
+            box-shadow: 0 0 14px rgba(124,109,250,0.4);
         }
+
         .mode-sep {
             width: 1px;
-            height: 20px;
+            height: 18px;
             background: var(--border-hi);
             margin: 0 4px;
         }
+
         #level-select-wrap {
             display: flex;
             align-items: center;
             gap: 6px;
-            margin-left: 4px;
+            margin-left: 2px;
         }
-        #level-select-wrap .mode-label { white-space: nowrap; }
-        #start-level {
+
+        #level-select-wrap .mode-label {
+            white-space: nowrap;
+        }
+
+        #start-level,
+        select {
+            min-height: 34px;
+            padding: 6px 8px;
+            border: 1px solid var(--border-hi);
+            border-radius: 7px;
             background: var(--bg);
             color: var(--text);
-            border: 1px solid var(--border-hi);
-            border-radius: 3px;
-            padding: 4px 8px;
-            font-family: 'Share Tech Mono', monospace;
             font-size: 11px;
             outline: none;
-            width: 56px;
             cursor: pointer;
         }
-        #start-level:focus { border-color: var(--accent); }
+
+        #start-level {
+            width: 68px;
+        }
 
         #wrapper {
-            display: flex;
-            gap: 14px;
-            align-items: flex-start;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 140px minmax(0, auto) 140px;
+            gap: 12px;
+            align-items: start;
+            justify-content: center;
         }
 
         .col {
+            width: 140px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            width: 128px;
+            gap: 8px;
         }
 
         .panel {
-            background: var(--surface);
+            min-width: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.06)), var(--surface);
             border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 10px 12px;
+            border-radius: var(--panel-radius);
+            padding: var(--panel-pad);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
         }
 
         .label {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 8px;
-            font-weight: 700;
-            letter-spacing: 3px;
+            margin-bottom: 5px;
             color: var(--text-dim);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 7px;
+            font-weight: 700;
+            letter-spacing: 2px;
             text-transform: uppercase;
-            margin-bottom: 8px;
+            user-select: none;
+        }
+
+        .stat-value,
+        #hi-score-val {
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            line-height: 1.1;
+            word-break: break-word;
         }
 
         .stat-value {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 20px;
-            font-weight: 700;
-            color: #fff;
+            font-size: 16px;
         }
 
-        /* board */
-        #board-wrap {
-            position: relative;
-            border: 1px solid var(--border-hi);
-            border-radius: 4px;
-            box-shadow: 0 0 40px rgba(124,109,250,0.08), inset 0 0 40px rgba(0,0,0,0.4);
+        #hi-score-val {
+            font-size: 12px;
+            color: var(--accent);
         }
-        canvas { display: block; }
 
-        /* overlay */
-        #overlay {
-            position: absolute;
-            inset: 0;
-            background: rgba(10,10,15,0.85);
+        #combo-panel {
+            min-height: 36px;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 10;
-            border-radius: 3px;
-            transition: opacity 0.25s;
-        }
-        #overlay.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-        #menu-content {
             text-align: center;
         }
-        #status-text {
+
+        #combo-text {
+            opacity: 0;
+            color: var(--accent2);
             font-family: 'Orbitron', sans-serif;
-            font-size: 11px;
+            font-size: 9px;
             font-weight: 700;
-            color: var(--text-dim);
-            letter-spacing: 3px;
-            margin-bottom: 6px;
-        }
-        #score-text {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 22px;
-            font-weight: 900;
-            color: #fff;
-            margin-bottom: 20px;
-            min-height: 30px;
-        }
-        #start-btn {
-            background: transparent;
-            color: var(--accent);
-            border: 1px solid var(--accent);
-            padding: 10px 24px;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            cursor: pointer;
-            border-radius: 3px;
-            transition: all 0.2s;
-        }
-        #start-btn:hover {
-            background: var(--accent);
-            color: #fff;
-            box-shadow: 0 0 20px rgba(124,109,250,0.5);
+            text-shadow: 0 0 10px var(--accent2);
+            transition: opacity 0.15s;
         }
 
-        /* config */
-        .config-row { margin-bottom: 10px; }
-        .config-row:last-child { margin-bottom: 0; }
+        #combo-text.show {
+            opacity: 1;
+        }
+
+        #config-panel {
+            display: none;
+        }
+
+        .config-row {
+            margin-bottom: 10px;
+        }
+
+        .config-row:last-child {
+            margin-bottom: 0;
+        }
+
         .config-label {
             display: flex;
             justify-content: space-between;
-            font-size: 9px;
-            color: var(--text-dim);
             margin-bottom: 4px;
+            color: var(--text-dim);
+            font-size: 9px;
         }
+
         .config-label span {
             color: var(--text);
             font-family: 'Orbitron', sans-serif;
             font-size: 9px;
         }
-        input[type=range] {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 3px;
-            background: var(--border-hi);
-            border-radius: 2px;
-            outline: none;
-            cursor: pointer;
+
+        .divider {
+            height: 1px;
+            margin: 8px 0;
+            background: var(--border);
         }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 10px; height: 10px;
-            border-radius: 50%;
-            background: var(--accent);
-            box-shadow: 0 0 6px var(--accent);
-            cursor: pointer;
-        }
+
         .checkbox-row {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            font-size: 9px;
-            color: var(--text-dim);
+            justify-content: space-between;
             margin-bottom: 10px;
+            color: var(--text-dim);
+            font-size: 9px;
         }
-        .toggle { position: relative; width: 28px; height: 16px; flex-shrink: 0; }
-        .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
-        .toggle-track {
-            position: absolute; inset: 0;
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            border-radius: 999px;
             background: var(--border-hi);
-            border-radius: 8px; cursor: pointer;
-            transition: background 0.2s;
+            outline: none;
+            cursor: pointer;
         }
-        .toggle input:checked + .toggle-track {
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
             background: var(--accent);
-            box-shadow: 0 0 8px var(--accent);
+            box-shadow: 0 0 8px rgba(124,109,250,0.8);
+            cursor: pointer;
         }
+
+        .toggle {
+            position: relative;
+            width: 34px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .toggle input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-track {
+            position: absolute;
+            inset: 0;
+            background: var(--border-hi);
+            border-radius: 999px;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+
         .toggle-thumb {
             position: absolute;
-            top: 2px; left: 2px;
-            width: 12px; height: 12px;
-            background: #fff; border-radius: 50%;
-            transition: transform 0.2s;
+            top: 2px;
+            left: 2px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #fff;
             pointer-events: none;
+            transition: transform 0.2s;
         }
-        .toggle input:checked ~ .toggle-thumb { transform: translateX(12px); }
-        .divider { height: 1px; background: var(--border); margin: 8px 0; }
-        select {
-            width: 100%;
-            background: var(--bg);
-            color: var(--text);
-            border: 1px solid var(--border-hi);
-            border-radius: 3px;
-            padding: 4px 6px;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 10px;
-            cursor: pointer;
-            outline: none;
-        }
-        select:focus { border-color: var(--accent); }
 
-        /* combo */
-        #combo-panel {
-            min-height: 40px;
-            text-align: center;
+        .toggle input:checked + .toggle-track {
+            background: var(--accent);
+            box-shadow: 0 0 10px rgba(124,109,250,0.7);
+        }
+
+        .toggle input:checked ~ .toggle-thumb {
+            transform: translateX(16px);
+        }
+
+        #board-area {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #next-panel {
+            width: 100%;
+            max-width: 320px;
+            padding: 6px 8px;
+        }
+
+        #board-wrap {
+            position: relative;
+            overflow: hidden;
+            width: min(56vw, calc(100svh - 280px));
+            max-width: 300px;
+            border: 1px solid var(--border-hi);
+            border-radius: 10px;
+            box-shadow: var(--shadow-soft), inset 0 0 40px rgba(0,0,0,0.4);
+            background: var(--surface-2);
+        }
+
+        #canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 1 / 2;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        #holdCanvas,
+        #nextCanvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            max-height: 50px;
+        }
+
+        #holdCanvas {
+            max-width: 96px;
+            margin: 0 auto;
+        }
+
+        #nextCanvas {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        #overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 10;
             display: flex;
             align-items: center;
             justify-content: center;
+            background: rgba(10,10,15,0.86);
+            transition: opacity 0.25s;
         }
-        #combo-text {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--accent2);
-            text-shadow: 0 0 10px var(--accent2);
-            opacity: 0;
-            transition: opacity 0.15s;
-        }
-        #combo-text.show { opacity: 1; }
 
-        /* high score */
-        #hi-score-val {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--accent);
+        #overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
         }
-        #config-panel { display: none; }
+
+        #menu-content {
+            text-align: center;
+            padding: 10px;
+        }
+
+        #status-text {
+            margin-bottom: 6px;
+            color: var(--text-dim);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 3px;
+        }
+
+        #score-text {
+            min-height: 30px;
+            margin-bottom: 18px;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 22px;
+            font-weight: 900;
+        }
+
+        #start-btn {
+            min-height: 42px;
+            padding: 10px 20px;
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--accent);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.08s;
+        }
+
+        #start-btn:hover {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(124,109,250,0.45);
+        }
+
+        #start-btn:active {
+            transform: translateY(1px);
+        }
+
+        #touch-controls {
+            display: none;
+            width: 100%;
+            max-width: min(96vw, 420px);
+            margin-top: 4px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .touch-row {
+            display: grid;
+            gap: 8px;
+        }
+
+        .touch-row.top {
+            grid-template-columns: repeat(3, 1fr);
+            margin-bottom: 8px;
+        }
+
+        .touch-row.bottom {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .touch-btn {
+            position: relative;
+            overflow: hidden;
+            min-height: 52px;
+            border: 1px solid var(--border-hi);
+            border-radius: 12px;
+            background: linear-gradient(180deg, #1a1a24, #121218);
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: transform 0.08s, border-color 0.1s, box-shadow 0.1s, background 0.1s;
+        }
+
+        .touch-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at center, rgba(124,109,250,0.2), transparent 70%);
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
+
+        .touch-btn:active::before,
+        .touch-btn.active::before {
+            opacity: 1;
+        }
+
+        .touch-btn:active,
+        .touch-btn.active {
+            transform: scale(0.98);
+            border-color: var(--accent);
+            background: linear-gradient(180deg, rgba(124,109,250,0.3), rgba(124,109,250,0.15));
+            box-shadow: 0 0 16px rgba(124,109,250,0.35), inset 0 0 12px rgba(124,109,250,0.18);
+        }
+
+        @media (min-width: 701px) {
+            body {
+                justify-content: center;
+                padding: 12px;
+            }
+
+            h1 {
+                font-size: 24px;
+                margin-bottom: 10px;
+            }
+
+            #mode-bar {
+                gap: 8px;
+                padding: 8px 10px;
+                margin-bottom: 10px;
+            }
+
+            .mode-btn {
+                min-height: 38px;
+                padding: 8px 14px;
+                font-size: 10px;
+            }
+
+            #start-level,
+            select {
+                min-height: 38px;
+            }
+        }
+
+        @media (max-width: 700px) {
+            body {
+                padding: 6px 6px calc(6px + var(--safe-bottom));
+            }
+
+            h1 {
+                font-size: clamp(13px, 3.1vw, 16px);
+                letter-spacing: clamp(2px, 0.8vw, 4px);
+                margin-bottom: 5px;
+            }
+
+            #mode-bar {
+                gap: 4px;
+                padding: 5px;
+                margin-bottom: 5px;
+            }
+
+            .mode-sep {
+                display: none;
+            }
+
+            .mode-btn {
+                flex: 1 1 calc(50% - 4px);
+                min-width: 100px;
+                min-height: 32px;
+                padding: 5px 8px;
+                font-size: 8px;
+            }
+
+            #level-select-wrap {
+                width: 100%;
+                justify-content: center;
+                margin: 4px 0 0;
+            }
+
+            #start-level,
+            select {
+                min-height: 32px;
+                padding: 5px 8px;
+                font-size: 10px;
+            }
+
+            #start-level {
+                width: 64px;
+            }
+
+            #wrapper {
+                grid-template-columns: 1fr;
+                gap: 6px;
+                justify-items: center;
+            }
+
+            #board-area {
+                order: 1;
+                width: 100%;
+                max-width: 340px;
+                gap: 6px;
+            }
+
+            .col {
+                width: 100%;
+                max-width: min(96vw, 420px);
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 6px;
+            }
+
+            .col .panel {
+                width: 100%;
+            }
+
+            .label {
+                font-size: 7px;
+                letter-spacing: 1.5px;
+                margin-bottom: 4px;
+            }
+
+            .stat-value {
+                font-size: 14px;
+            }
+
+            #hi-score-val {
+                font-size: 11px;
+            }
+
+            #combo-panel {
+                min-height: 32px;
+            }
+
+            #combo-text {
+                font-size: 8px;
+            }
+
+            #next-panel {
+                max-width: 340px;
+                padding: 5px 8px;
+            }
+
+            #board-wrap {
+                width: min(62vw, calc(100svh - 330px));
+                max-width: 280px;
+                min-width: 220px;
+            }
+
+            #holdCanvas {
+                max-width: 72px;
+            }
+
+            #touch-controls.show {
+                display: block;
+            }
+
+            .touch-btn {
+                min-height: 48px;
+                font-size: 11px;
+            }
+
+            #status-text {
+                font-size: 10px;
+            }
+
+            #score-text {
+                font-size: 20px;
+            }
+
+            #start-btn {
+                min-height: 38px;
+                padding: 8px 18px;
+                font-size: 10px;
+            }
+        }
+
+        @media (max-width: 700px) and (max-height: 700px) {
+            body {
+                padding: 4px 4px calc(4px + var(--safe-bottom));
+            }
+
+            h1 {
+                font-size: 12px;
+                letter-spacing: 2px;
+                margin-bottom: 4px;
+            }
+
+            #mode-bar {
+                gap: 3px;
+                padding: 4px;
+                margin-bottom: 4px;
+            }
+
+            .mode-btn {
+                min-height: 28px;
+                padding: 4px 6px;
+                font-size: 7px;
+            }
+
+            #start-level,
+            select {
+                min-height: 28px;
+                padding: 4px 6px;
+                font-size: 9px;
+            }
+
+            #start-level {
+                width: 56px;
+            }
+
+            .panel {
+                padding: 5px 7px;
+            }
+
+            .col {
+                gap: 5px;
+            }
+
+            .label {
+                font-size: 6px;
+                margin-bottom: 3px;
+            }
+
+            .stat-value {
+                font-size: 12px;
+            }
+
+            #hi-score-val {
+                font-size: 10px;
+            }
+
+            #combo-panel {
+                min-height: 28px;
+            }
+
+            #combo-text {
+                font-size: 7px;
+            }
+
+            #next-panel {
+                padding: 1px 2px;
+            }
+
+            #board-wrap {
+                width: min(56vw, calc(100svh - 285px));
+                max-width: 240px;
+                min-width: 200px;
+            }
+
+            #holdCanvas {
+                max-width: 64px;
+            }
+
+            .touch-row {
+                gap: 6px;
+            }
+
+            .touch-row.top {
+                margin-bottom: 6px;
+            }
+
+            .touch-btn {
+                min-height: 42px;
+                font-size: 10px;
+                border-radius: 10px;
+            }
+
+            #status-text {
+                font-size: 9px;
+            }
+
+            #score-text {
+                font-size: 18px;
+                margin-bottom: 16px;
+            }
+
+            #start-btn {
+                min-height: 34px;
+                padding: 7px 16px;
+                font-size: 9px;
+            }
+        }
+
+        @media (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
+            body {
+                padding: 4px;
+            }
+
+            h1 {
+                font-size: 11px;
+                margin-bottom: 3px;
+            }
+
+            #mode-bar {
+                padding: 3px;
+                margin-bottom: 3px;
+            }
+
+            .mode-btn {
+                min-height: 26px;
+                font-size: 7px;
+            }
+
+            #wrapper {
+                grid-template-columns: auto 1fr auto;
+                gap: 6px;
+                max-width: 100%;
+            }
+
+            .col {
+                width: auto;
+                max-width: 160px;
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 4px;
+            }
+
+            #board-area {
+                order: 0;
+                width: auto;
+                max-width: none;
+            }
+
+            #next-panel {
+                max-width: 360px;
+            }
+
+            #board-wrap {
+                width: auto;
+                height: calc(100svh - 120px);
+                max-height: 360px;
+                min-width: 0;
+            }
+
+            #touch-controls {
+                display: none !important;
+            }
+
+            .panel {
+                padding: 4px 6px;
+            }
+
+            .label {
+                font-size: 6px;
+            }
+
+            .stat-value {
+                font-size: 11px;
+            }
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            #touch-controls.show {
+                display: block;
+            }
+        }
     </style>
 </head>
 <body>
+<div id="app">
+    <h1>TETRIS</h1>
 
-<h1>TETRIS</h1>
-
-<!-- Mode selector — most prominent, above board -->
-<div id="mode-bar">
-    <span class="mode-label">MODE</span>
-    <button class="mode-btn" data-mode="0">NES</button>
-    <button class="mode-btn active" data-mode="1">GUIDELINE</button>
-    <button class="mode-btn" data-mode="2">TGM</button>
-    <button class="mode-btn" data-mode="99">CUSTOM</button>
-    <div class="mode-sep"></div>
-    <div id="level-select-wrap">
-        <span class="mode-label">START LVL</span>
-        <select id="start-level">
-            <option value="0">0</option>
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-            <option value="6">6</option>
-            <option value="7">7</option>
-            <option value="8">8</option>
-            <option value="9">9</option>
-            <option value="10">10</option>
-            <option value="15">15</option>
-            <option value="19">19</option>
-            <option value="29">29</option>
-        </select>
-    </div>
-</div>
-
-<div id="wrapper">
-    <!-- Left col -->
-    <div class="col">
-        <div class="panel" >
-            <div class="label">Hold</div>
-            <canvas id="holdCanvas"></canvas>
-        </div>
-        <div class="panel" id="config-panel">
-            <div class="label">Config</div>
-            <div class="config-row">
-                <div class="config-label">DAS <span id="das-val">10</span></div>
-                <input type="range" id="das" min="0" max="30" value="10">
-            </div>
-            <div class="config-row">
-                <div class="config-label">ARR <span id="arr-val">2</span></div>
-                <input type="range" id="arr" min="0" max="10" value="2">
-            </div>
-            <div class="config-row">
-                <div class="config-label">LOCK <span id="lock-val">30</span></div>
-                <input type="range" id="lock" min="0" max="60" value="30">
-            </div>
-            <div class="divider"></div>
-            <div class="checkbox-row">
-                <span>Ghost</span>
-                <label class="toggle">
-                    <input type="checkbox" id="ghost" checked>
-                    <div class="toggle-track"></div>
-                    <div class="toggle-thumb"></div>
-                </label>
-            </div>
-            <div class="config-row">
-                <div class="config-label">Generator</div>
-                <select id="generator">
-                    <option value="0">7-Bag</option>
-                    <option value="1">NES Random</option>
-                </select>
-            </div>
+    <div id="mode-bar" role="toolbar" aria-label="Game mode selection">
+        <span class="mode-label">MODE</span>
+        <button type="button" class="mode-btn" data-mode="0">NES</button>
+        <button type="button" class="mode-btn active" data-mode="1">GUIDELINE</button>
+        <button type="button" class="mode-btn" data-mode="2">TGM</button>
+        <button type="button" class="mode-btn" data-mode="99">CUSTOM</button>
+        <div class="mode-sep" aria-hidden="true"></div>
+        <div id="level-select-wrap">
+            <span class="mode-label">START LVL</span>
+            <select id="start-level" aria-label="Start level">
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="19">19</option>
+                <option value="29">29</option>
+            </select>
         </div>
     </div>
 
-    <!-- Board -->
-    <div id="board-wrap">
-        <canvas id="canvas"></canvas>
-        <div id="overlay">
-            <div id="menu-content">
-                <div id="status-text">READY</div>
-                <div id="score-text"></div>
-                <button id="start-btn">START</button>
+    <div id="wrapper">
+        <div class="col" id="left-col">
+            <div class="panel">
+                <div class="label">Hold</div>
+                <canvas id="holdCanvas" aria-label="Hold piece preview"></canvas>
+            </div>
+
+            <div class="panel">
+                <div class="label">Score</div>
+                <div class="stat-value" id="score">0</div>
+            </div>
+
+            <div class="panel" id="config-panel">
+                <div class="label">Config</div>
+
+                <div class="config-row">
+                    <div class="config-label">DAS <span id="das-val">10</span></div>
+                    <input type="range" id="das" min="0" max="30" value="10" />
+                </div>
+
+                <div class="config-row">
+                    <div class="config-label">ARR <span id="arr-val">2</span></div>
+                    <input type="range" id="arr" min="0" max="10" value="2" />
+                </div>
+
+                <div class="config-row">
+                    <div class="config-label">LOCK <span id="lock-val">30</span></div>
+                    <input type="range" id="lock" min="0" max="60" value="30" />
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="checkbox-row">
+                    <span>Ghost</span>
+                    <label class="toggle">
+                        <input type="checkbox" id="ghost" checked />
+                        <div class="toggle-track"></div>
+                        <div class="toggle-thumb"></div>
+                    </label>
+                </div>
+
+                <div class="config-row">
+                    <div class="config-label">Generator</div>
+                    <select id="generator">
+                        <option value="0">7-Bag</option>
+                        <option value="1">NES Random</option>
+                    </select>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Right col -->
-    <div class="col">
-        <div class="panel">
-            <div class="label">Score</div>
-            <div class="stat-value" id="score">0</div>
+        <div id="board-area">
+            <div class="panel" id="next-panel">
+                <div class="label">Next</div>
+                <canvas id="nextCanvas" aria-label="Next pieces preview"></canvas>
+            </div>
+
+            <div id="board-wrap">
+                <canvas id="canvas" aria-label="Tetris game board"></canvas>
+                <div id="overlay">
+                    <div id="menu-content">
+                        <div id="status-text">READY</div>
+                        <div id="score-text"></div>
+                        <button type="button" id="start-btn">START</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="touch-controls" aria-label="Touch controls">
+                <div class="touch-row top">
+                    <button type="button" class="touch-btn" data-action="rotateLeft" aria-label="Rotate left">↺</button>
+                    <button type="button" class="touch-btn" data-action="hardDrop" aria-label="Hard drop">DROP</button>
+                    <button type="button" class="touch-btn" data-action="rotateRight" aria-label="Rotate right">↻</button>
+                </div>
+                <div class="touch-row bottom">
+                    <button type="button" class="touch-btn" data-action="left" aria-label="Move left">◀</button>
+                    <button type="button" class="touch-btn" data-action="down" aria-label="Soft drop">▼</button>
+                    <button type="button" class="touch-btn" data-action="right" aria-label="Move right">▶</button>
+                    <button type="button" class="touch-btn" data-action="hold" aria-label="Hold piece">HOLD</button>
+                </div>
+            </div>
         </div>
-        <div class="panel">
-            <div class="label">Best</div>
-            <div id="hi-score-val">0</div>
-        </div>
-        <div class="panel">
-            <div class="label">Level</div>
-            <div class="stat-value" id="level">0</div>
-        </div>
-        <div class="panel">
-            <div class="label">Lines</div>
-            <div class="stat-value" id="lines">0</div>
-        </div>
-        <div class="panel" id="combo-panel">
-            <div id="combo-text"></div>
-        </div>
-        <div class="panel">
-            <div class="label">Next</div>
-            <canvas id="nextCanvas"></canvas>
+
+        <div class="col" id="right-col">
+            <div class="panel">
+                <div class="label">Best</div>
+                <div id="hi-score-val">0</div>
+            </div>
+
+            <div class="panel">
+                <div class="label">Level</div>
+                <div class="stat-value" id="level">0</div>
+            </div>
+
+            <div class="panel">
+                <div class="label">Lines</div>
+                <div class="stat-value" id="lines">0</div>
+            </div>
+
+            <div class="panel" id="combo-panel">
+                <div id="combo-text"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -441,6 +1034,10 @@
     const MINI_BLOCK = 24;
     const COLS = 10;
     const ROWS = 20;
+
+    const IS_MOBILE = window.matchMedia('(max-width: 700px)').matches;
+    const PREVIEW_COUNT = IS_MOBILE ? 4 : 5;
+    const NEXT_MINI_BLOCK = IS_MOBILE ? 10 : 20;
 
     const COLORS = [
         '#000000',
@@ -463,92 +1060,123 @@
     ];
 
     const KEY_MAP = {
-        'ArrowLeft': 0, 'ArrowRight': 1, 'ArrowDown': 2,
-        'ArrowUp': 3, 'KeyZ': 4, 'KeyX': 5, 'KeyC': 6,
+        ArrowLeft: 0,
+        ArrowRight: 1,
+        ArrowDown: 2,
+        ArrowUp: 3,
+        KeyZ: 4,
+        KeyX: 5,
+        KeyC: 6,
+    };
+
+    const TOUCH_ACTION_MAP = {
+        left: 0,
+        right: 1,
+        down: 2,
+        hardDrop: 3,
+        rotateLeft: 4,
+        rotateRight: 5,
+        hold: 6,
     };
 
     const EVENT_LINE_CLEAR = 0;
     const EVENT_PIECE_LOCK = 1;
-    const EVENT_LEVEL_UP   = 2;
-    const EVENT_TETRIS     = 3;
-    const EVENT_TSPIN      = 4;
-    const FLASH_DURATION   = 20;
-    const LOCK_FLASH_DUR   = 8;
+    const EVENT_LEVEL_UP = 2;
+    const EVENT_TETRIS = 3;
+    const EVENT_TSPIN = 6;
+    const FLASH_DURATION = 20;
+    const LOCK_FLASH_DUR = 8;
 
-    // --- persistent render state ---
-    let flashRows      = [];
-    let flashTimer     = 0;
+    let flashRows = [];
+    let flashTimer = 0;
     let lockFlashCells = [];
     let lockFlashTimer = 0;
-    let comboTimer     = 0;
-    let tspinTimer     = 0;
-    let tspinText      = '';
-    let rafId          = null;  // so we can cancel the loop on game over
+    let comboTimer = 0;
+    let rafId = null;
 
-    // --- canvas ---
-    const canvas    = document.getElementById('canvas');
-    canvas.width    = COLS * BLOCK_SIZE;
-    canvas.height   = ROWS * BLOCK_SIZE;
-    const ctx       = canvas.getContext('2d');
+    const canvas = document.getElementById('canvas');
+    canvas.width = COLS * BLOCK_SIZE;
+    canvas.height = ROWS * BLOCK_SIZE;
+    const ctx = canvas.getContext('2d');
 
-    const holdCanvas  = document.getElementById('holdCanvas');
-    holdCanvas.width  = 4 * MINI_BLOCK;
+    const holdCanvas = document.getElementById('holdCanvas');
+    holdCanvas.width = 4 * MINI_BLOCK;
     holdCanvas.height = 4 * MINI_BLOCK;
-    const holdCtx     = holdCanvas.getContext('2d');
+    const holdCtx = holdCanvas.getContext('2d');
 
-    const nextCanvas  = document.getElementById('nextCanvas');
-    nextCanvas.width  = 4 * MINI_BLOCK;
-    nextCanvas.height = 5 * 4 * MINI_BLOCK;
-    const nextCtx     = nextCanvas.getContext('2d');
+    const nextCanvas = document.getElementById('nextCanvas');
+    nextCanvas.width = PREVIEW_COUNT * 4 * NEXT_MINI_BLOCK;
+    nextCanvas.height = 4 * NEXT_MINI_BLOCK;
+    const nextCtx = nextCanvas.getContext('2d');
 
-    // --- DOM refs ---
-    const scoreEl    = document.getElementById('score');
-    const levelEl    = document.getElementById('level');
-    const linesEl    = document.getElementById('lines');
-    const comboEl    = document.getElementById('combo-text');
-    const overlay    = document.getElementById('overlay');
+    const scoreEl = document.getElementById('score');
+    const levelEl = document.getElementById('level');
+    const linesEl = document.getElementById('lines');
+    const comboEl = document.getElementById('combo-text');
+    const overlay = document.getElementById('overlay');
     const statusText = document.getElementById('status-text');
-    const scoreText  = document.getElementById('score-text');
-    const startBtn   = document.getElementById('start-btn');
-    const boardWrap  = document.getElementById('board-wrap');
-    const hiScoreEl  = document.getElementById('hi-score-val');
+    const scoreText = document.getElementById('score-text');
+    const startBtn = document.getElementById('start-btn');
+    const boardWrap = document.getElementById('board-wrap');
+    const hiScoreEl = document.getElementById('hi-score-val');
+    const touchControls = document.getElementById('touch-controls');
 
-    // --- local storage stats ---
     const Stats = {
         key: 'tetris_stats_v1',
-        load() {
-            try { return JSON.parse(localStorage.getItem(this.key)) || this.defaults(); }
-            catch { return this.defaults(); }
+        defaults() {
+            return {
+                highScore: 0,
+                gamesPlayed: 0,
+                totalLines: 0,
+            };
         },
-        defaults() { return { highScore: 0, gamesPlayed: 0, totalLines: 0 }; },
-        save(s) {
-            try { localStorage.setItem(this.key, JSON.stringify(s)); } catch {}
+        load() {
+            try {
+                return JSON.parse(localStorage.getItem(this.key)) || this.defaults();
+            } catch {
+                return this.defaults();
+            }
+        },
+        save(value) {
+            try {
+                localStorage.setItem(this.key, JSON.stringify(value));
+            } catch {}
         },
         recordGame(score, lines) {
-            const s = this.load();
-            s.gamesPlayed++;
-            s.totalLines += lines;
-            if (score > s.highScore) s.highScore = score;
-            this.save(s);
-            return s;
+            const stats = this.load();
+            stats.gamesPlayed += 1;
+            stats.totalLines += lines;
+            if (score > stats.highScore) stats.highScore = score;
+            this.save(stats);
+            return stats;
         },
     };
 
     function refreshHiScore() {
         hiScoreEl.textContent = Stats.load().highScore.toLocaleString();
     }
+
     refreshHiScore();
 
-    // ----------------------------------------------------------------
-    // Game state machine
-    // overlay states: 'menu' | 'dead'
-    // ----------------------------------------------------------------
-    let gameState = 'menu';  // 'menu' | 'playing' | 'dead'
+    function isTouchDevice() {
+        return (
+            window.matchMedia('(hover: none) and (pointer: coarse)').matches ||
+            'ontouchstart' in window ||
+            navigator.maxTouchPoints > 0
+        );
+    }
 
-    function showOverlay(status, showScore, btnLabel) {
+    function updateTouchControlsVisibility() {
+        touchControls.classList.toggle('show', isTouchDevice());
+    }
+
+    window.addEventListener('resize', updateTouchControlsVisibility);
+    updateTouchControlsVisibility();
+
+    function showOverlay(status, showScore, buttonLabel) {
         statusText.textContent = status;
-        scoreText.textContent  = showScore ? `${scoreEl.textContent}` : '';
-        startBtn.textContent   = btnLabel;
+        scoreText.textContent = showScore ? `${scoreEl.textContent}` : '';
+        startBtn.textContent = buttonLabel;
         overlay.classList.remove('hidden');
     }
 
@@ -556,27 +1184,29 @@
         overlay.classList.add('hidden');
     }
 
-    // ----------------------------------------------------------------
-    // Mode selection
-    // ----------------------------------------------------------------
-    let activeMode = 1; // default guideline
+    let activeMode = 1;
 
-    document.querySelectorAll('.mode-btn').forEach(btn => {
+    document.querySelectorAll('.mode-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.mode-btn').forEach((b) => b.classList.remove('active'));
             btn.classList.add('active');
-            activeMode = parseInt(btn.dataset.mode);
-            const isCustom = activeMode === 99; // or whatever custom index
+            activeMode = Number.parseInt(btn.dataset.mode, 10);
+
+            const isCustom = activeMode === 99;
             document.getElementById('config-panel').style.display = isCustom ? 'block' : 'none';
         });
     });
 
     function getStartLevel() {
-        return parseInt(document.getElementById('start-level').value);
+        return Number.parseInt(document.getElementById('start-level').value, 10);
+    }
+
+    function syncSlider(id, valueId, value) {
+        document.getElementById(id).value = value;
+        document.getElementById(valueId).textContent = value;
     }
 
     function applyRuleset(game, mode, startLevel) {
-
         if (mode === 0) {
             game.use_nes_ruleset(startLevel);
             syncSlider('das', 'das-val', 16);
@@ -592,53 +1222,32 @@
             document.getElementById('ghost').checked = true;
             document.getElementById('generator').value = '0';
         } else if (mode === 2) {
-            // TGM placeholder
             game.use_guideline_ruleset(startLevel);
         }
     }
 
-    // ----------------------------------------------------------------
-    // Events
-    // ----------------------------------------------------------------
-    function processEvents(game) {
-        const events = game.drain_events();
-        for (let i = 0; i < events.length; i += 5) {
-            const kind = events[i];
-            const data = events.slice(i + 1, i + 5);
-            switch (kind) {
-                case EVENT_LINE_CLEAR:
-                    flashRows  = [...data].filter(r => r !== 255);
-                    flashTimer = FLASH_DURATION;
-                    break;
-                case EVENT_TETRIS:
-                    flashRows  = [...data].filter(r => r !== 255);
-                    flashTimer = FLASH_DURATION;
-                    showComboText('TETRIS');
-                    break;
-                case EVENT_PIECE_LOCK:
-                    lockFlashCells = [...data].filter(p => p !== 255);
-                    lockFlashTimer = LOCK_FLASH_DUR;
-                    break;
-                case EVENT_LEVEL_UP:
-                    levelEl.animate(
-                        [{ color: '#7c6dfa', textShadow: '0 0 20px #7c6dfa' },
-                            { color: '#fff', textShadow: 'none' }],
-                        { duration: 500, easing: 'ease-out' }
-                    );
-                    boardWrap.animate([
-                        { boxShadow: '0 0 60px rgba(124,109,250,0.5)' },
-                        { boxShadow: '0 0 40px rgba(124,109,250,0.08)' },
-                    ], { duration: 600, easing: 'ease-out' });
-                    break;
-                case EVENT_TSPIN: {
-                    const isMini  = data[0] === 0;
-                    const lines   = data[1];
-                    const label   = isMini ? 'T-SPIN MINI' : lines === 1 ? 'T-SPIN' : lines === 2 ? 'T-SPIN DOUBLE' : 'T-SPIN TRIPLE';
-                    showComboText(label);
-                    break;
-                }
-            }
+    function wireConfig(game) {
+        const sliders = [
+            { id: 'das', valueId: 'das-val', setter: (v) => game.set_das(v) },
+            { id: 'arr', valueId: 'arr-val', setter: (v) => game.set_arr(v) },
+            { id: 'lock', valueId: 'lock-val', setter: (v) => game.set_lock_delay(v) },
+        ];
+
+        for (const { id, valueId, setter } of sliders) {
+            document.getElementById(id).addEventListener('input', (e) => {
+                const value = Number.parseInt(e.target.value, 10);
+                document.getElementById(valueId).textContent = value;
+                setter(value);
+            });
         }
+
+        document.getElementById('ghost').addEventListener('change', (e) => {
+            game.set_ghost(e.target.checked);
+        });
+
+        document.getElementById('generator').addEventListener('change', (e) => {
+            game.set_generator(Number.parseInt(e.target.value, 10));
+        });
     }
 
     function showComboText(text) {
@@ -647,26 +1256,92 @@
         comboTimer = 90;
     }
 
-    // ----------------------------------------------------------------
-    // Draw
-    // ----------------------------------------------------------------
+    function processEvents(game) {
+        const events = game.drain_events();
+
+        for (let i = 0; i < events.length; i += 5) {
+            const kind = events[i];
+            const data = events.slice(i + 1, i + 5);
+
+            switch (kind) {
+                case EVENT_LINE_CLEAR:
+                    flashRows = data.filter((r) => r !== 255);
+                    flashTimer = FLASH_DURATION;
+                    break;
+
+                case EVENT_TETRIS:
+                    flashRows = data.filter((r) => r !== 255);
+                    flashTimer = FLASH_DURATION;
+                    showComboText('TETRIS');
+                    break;
+
+                case EVENT_PIECE_LOCK:
+                    lockFlashCells = data.filter((p) => p !== 255);
+                    lockFlashTimer = LOCK_FLASH_DUR;
+                    break;
+
+                case EVENT_LEVEL_UP:
+                    levelEl.animate(
+                        [
+                            { color: '#7c6dfa', textShadow: '0 0 20px #7c6dfa' },
+                            { color: '#fff', textShadow: 'none' },
+                        ],
+                        { duration: 500, easing: 'ease-out' }
+                    );
+
+                    boardWrap.animate(
+                        [
+                            { boxShadow: '0 0 60px rgba(124,109,250,0.5)' },
+                            { boxShadow: '0 0 40px rgba(124,109,250,0.08)' },
+                        ],
+                        { duration: 600, easing: 'ease-out' }
+                    );
+                    break;
+
+                case EVENT_TSPIN: {
+                    const isMini = data[0] === 0;
+                    const lines = data[1];
+                    const label = isMini
+                        ? 'T-SPIN MINI'
+                        : lines === 2
+                            ? 'T-SPIN DOUBLE'
+                            : lines === 3
+                                ? 'T-SPIN TRIPLE'
+                                : 'T-SPIN';
+
+                    showComboText(label);
+                    break;
+                }
+            }
+        }
+    }
+
     function drawBoard(board) {
         ctx.fillStyle = '#0d0d14';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.strokeStyle = 'rgba(255,255,255,0.025)';
         ctx.lineWidth = 1;
+
         for (let r = 0; r <= ROWS; r++) {
-            ctx.beginPath(); ctx.moveTo(0, r * BLOCK_SIZE); ctx.lineTo(canvas.width, r * BLOCK_SIZE); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, r * BLOCK_SIZE);
+            ctx.lineTo(canvas.width, r * BLOCK_SIZE);
+            ctx.stroke();
         }
+
         for (let c = 0; c <= COLS; c++) {
-            ctx.beginPath(); ctx.moveTo(c * BLOCK_SIZE, 0); ctx.lineTo(c * BLOCK_SIZE, canvas.height); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(c * BLOCK_SIZE, 0);
+            ctx.lineTo(c * BLOCK_SIZE, canvas.height);
+            ctx.stroke();
         }
 
         for (let row = 0; row < ROWS; row++) {
             const rowFlashing = flashRows.includes(row) && flashTimer > 0;
+
             for (let col = 0; col < COLS; col++) {
-                const idx  = row * COLS + col;
+                const idx = row * COLS + col;
                 const cell = board[idx];
                 const lockFlashing = lockFlashTimer > 0 && lockFlashCells.includes(idx);
 
@@ -689,9 +1364,11 @@
                 } else if (cell !== 0 && COLORS[cell] !== null) {
                     ctx.fillStyle = COLORS[cell];
                     ctx.fillRect(x, y, s, s);
+
                     if (cell < 11) {
                         ctx.fillStyle = 'rgba(255,255,255,0.18)';
                         ctx.fillRect(x + 1, y + 1, s - 2, 4);
+
                         ctx.fillStyle = 'rgba(0,0,0,0.2)';
                         ctx.fillRect(x + 1, y + s - 4, s - 2, 3);
                     }
@@ -699,23 +1376,35 @@
             }
         }
 
-        if (flashTimer > 0)     flashTimer--;
-        if (lockFlashTimer > 0) lockFlashTimer--;
+        if (flashTimer > 0) flashTimer -= 1;
+        if (lockFlashTimer > 0) lockFlashTimer -= 1;
     }
 
-    function drawPieceInPanel(pCtx, kindIndex, offsetY, dimmed) {
+    function drawPieceInPanel(pCtx, kindIndex, offsetX, offsetY, blockSize, dimmed) {
         if (!kindIndex) return;
+
         const cells = PIECE_CELLS[kindIndex];
         const color = dimmed ? '#2a2a3a' : COLORS[kindIndex];
+
         for (let r = 0; r < 4; r++) {
             for (let c = 0; c < 4; c++) {
                 if (!cells[r][c]) continue;
-                const x = c * MINI_BLOCK, y = offsetY + r * MINI_BLOCK, s = MINI_BLOCK - 2;
+
+                const x = offsetX + c * blockSize;
+                const y = offsetY + r * blockSize;
+                const s = blockSize - 2;
+
                 pCtx.fillStyle = color;
                 pCtx.fillRect(x, y, s, s);
+
                 if (!dimmed) {
                     pCtx.fillStyle = 'rgba(255,255,255,0.18)';
-                    pCtx.fillRect(x + 1, y + 1, s - 2, 3);
+                    pCtx.fillRect(
+                        x + 1,
+                        y + 1,
+                        s - 2,
+                        Math.max(2, Math.floor(blockSize * 0.14))
+                    );
                 }
             }
         }
@@ -724,14 +1413,22 @@
     function drawHold(holdKind, holdUsed) {
         holdCtx.fillStyle = '#0d0d14';
         holdCtx.fillRect(0, 0, holdCanvas.width, holdCanvas.height);
-        drawPieceInPanel(holdCtx, holdKind, 0, holdUsed);
+        drawPieceInPanel(holdCtx, holdKind, 0, 0, MINI_BLOCK, holdUsed);
     }
 
     function drawNext(nextPieces) {
         nextCtx.fillStyle = '#0d0d14';
         nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+
         for (let i = 0; i < nextPieces.length; i++) {
-            drawPieceInPanel(nextCtx, nextPieces[i], i * 4 * MINI_BLOCK, false);
+            drawPieceInPanel(
+                nextCtx,
+                nextPieces[i],
+                i * 4 * NEXT_MINI_BLOCK,
+                0,
+                NEXT_MINI_BLOCK,
+                false
+            );
         }
     }
 
@@ -741,71 +1438,96 @@
         linesEl.textContent = game.get_lines_cleared();
     }
 
-    // ----------------------------------------------------------------
-    // Config
-    // ----------------------------------------------------------------
-    function syncSlider(id, valId, value) {
-        document.getElementById(id).value = value;
-        document.getElementById(valId).textContent = value;
-    }
-
-    function wireConfig(game) {
-        const sliders = [
-            { id: 'das',  valId: 'das-val',  setter: v => game.set_das(v),        parse: parseInt },
-            { id: 'arr',  valId: 'arr-val',  setter: v => game.set_arr(v),        parse: parseInt },
-            { id: 'lock', valId: 'lock-val', setter: v => game.set_lock_delay(v), parse: parseInt },
-        ];
-        for (const { id, valId, setter, parse } of sliders) {
-            document.getElementById(id).addEventListener('input', e => {
-                const v = parse(e.target.value);
-                document.getElementById(valId).textContent = v;
-                setter(v);
-            });
-        }
-        document.getElementById('ghost').addEventListener('change', e => game.set_ghost(e.target.checked));
-        document.getElementById('generator').addEventListener('change', e => game.set_generator(parseInt(e.target.value)));
-    }
-
-    // ----------------------------------------------------------------
-    // Main
-    // ----------------------------------------------------------------
     async function main() {
         await init();
+
         const game = new Game();
         wireConfig(game);
 
-        // block input until playing
         let inputEnabled = false;
-
-        document.addEventListener('keydown', e => {
-            if (!inputEnabled) return;
-            if (e.repeat) return;
-            const key = KEY_MAP[e.code];
-            if (key !== undefined) { e.preventDefault(); game.key_down(key); }
-        });
-        document.addEventListener('keyup', e => {
-            if (!inputEnabled) return;
-            const key = KEY_MAP[e.code];
-            if (key !== undefined) game.key_up(key);
-        });
-
-        const FRAME_TIME = 1000 / 60;
+        let lastTime = null;
         let accumulator = 0;
-        let lastTime    = null;
+        const FRAME_TIME = 1000 / 60;
+
+        document.addEventListener('keydown', (e) => {
+            if (!inputEnabled || e.repeat) return;
+
+            const key = KEY_MAP[e.code];
+            if (key === undefined) return;
+
+            e.preventDefault();
+            game.key_down(key);
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (!inputEnabled) return;
+
+            const key = KEY_MAP[e.code];
+            if (key === undefined) return;
+
+            game.key_up(key);
+        });
+
+        function bindTouchButton(button, action) {
+            const key = TOUCH_ACTION_MAP[action];
+            if (key === undefined) return;
+
+            const holdable = action === 'left' || action === 'right' || action === 'down';
+
+            const press = (e) => {
+                if (!inputEnabled) return;
+                e.preventDefault();
+                button.classList.add('active');
+                game.key_down(key);
+            };
+
+            const release = (e) => {
+                if (!inputEnabled) return;
+                e.preventDefault();
+                button.classList.remove('active');
+                game.key_up(key);
+            };
+
+            if (holdable) {
+                button.addEventListener('pointerdown', press);
+                button.addEventListener('pointerup', release);
+                button.addEventListener('pointercancel', release);
+                button.addEventListener('pointerleave', release);
+            } else {
+                button.addEventListener('pointerdown', (e) => {
+                    if (!inputEnabled) return;
+                    e.preventDefault();
+                    button.classList.add('active');
+                    game.key_down(key);
+
+                    setTimeout(() => {
+                        game.key_up(key);
+                        button.classList.remove('active');
+                    }, 40);
+                });
+            }
+        }
+
+        document.querySelectorAll('#touch-controls [data-action]').forEach((button) => {
+            bindTouchButton(button, button.dataset.action);
+        });
 
         function startGame() {
-            // apply ruleset with chosen start level
-            game.restart(getStartLevel())
-            applyRuleset(game, activeMode, getStartLevel());
+            const startLevel = getStartLevel();
+
+            game.restart(startLevel);
+            applyRuleset(game, activeMode, startLevel);
             game.start();
-            // reset render state
-            flashRows = []; flashTimer = 0;
-            lockFlashCells = []; lockFlashTimer = 0;
+
+            flashRows = [];
+            flashTimer = 0;
+            lockFlashCells = [];
+            lockFlashTimer = 0;
             comboTimer = 0;
 
             inputEnabled = true;
-            lastTime     = null;
-            accumulator  = 0;
+            lastTime = null;
+            accumulator = 0;
 
             hideOverlay();
 
@@ -814,15 +1536,23 @@
         }
 
         startBtn.addEventListener('click', () => {
-            if (gameState === 'dead') {
-                //game.restart(getStartLevel());
-            }
-            gameState = 'playing';
             startGame();
         });
 
+        function render() {
+            drawBoard(game.get_board());
+            drawHold(game.get_hold_piece(), game.is_hold_used());
+            drawNext(game.get_next_pieces(PREVIEW_COUNT));
+            updateStats(game);
+        }
+
         function loop(ts) {
-            if (!lastTime) { lastTime = ts; rafId = requestAnimationFrame(loop); return; }
+            if (!lastTime) {
+                lastTime = ts;
+                rafId = requestAnimationFrame(loop);
+                return;
+            }
+
             accumulator += Math.min(ts - lastTime, 200);
             lastTime = ts;
 
@@ -835,34 +1565,22 @@
 
             if (game.is_game_over()) {
                 inputEnabled = false;
-                gameState    = 'dead';
-
-                // record stats
-                const s = Stats.recordGame(game.get_score(), game.get_lines_cleared());
+                Stats.recordGame(game.get_score(), game.get_lines_cleared());
                 refreshHiScore();
-
-                // final render
-                drawBoard(game.get_board());
-                drawHold(game.get_hold_piece(), game.is_hold_used());
-                drawNext(game.get_next_pieces(5));
-                updateStats(game);
-
+                render();
                 showOverlay('GAME OVER', true, 'RETRY');
-                return; // stop the loop
+                return;
             }
 
-            if (comboTimer > 0 && --comboTimer === 0) comboEl.classList.remove('show');
+            if (comboTimer > 0 && --comboTimer === 0) {
+                comboEl.classList.remove('show');
+            }
 
-            drawBoard(game.get_board());
-            drawHold(game.get_hold_piece(), game.is_hold_used());
-            drawNext(game.get_next_pieces(5));
-            updateStats(game);
-
+            render();
             rafId = requestAnimationFrame(loop);
         }
 
-        // initial board draw so it's not blank behind the overlay
-        drawBoard(game.get_board());
+        render();
         showOverlay('READY', false, 'START');
     }
 
